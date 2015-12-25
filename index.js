@@ -1,6 +1,5 @@
 import inquirer from 'inquirer';
 import connecter from './lib/connecter';
-import downloader from './lib/downloader';
 
 /**
  * [questions array for inquirer]
