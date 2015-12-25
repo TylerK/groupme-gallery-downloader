@@ -19,7 +19,7 @@ let questions = [
     name: 'group_id',
     message: 'What is your GroupMe Group\'s ID?',
     validate: (input) => {
-      return input.length >= 5 && /^\d+$/.test(input) ? true : 'Please input a valid GroupMe ID#'
+      return input.length >= 5 && /^\d+$/.test(input) ? true : 'Please input a valid GroupMe ID Number'
     }
   }
 ];
