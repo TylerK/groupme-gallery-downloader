@@ -9,6 +9,6 @@ Git and NodeJS installed, and some basic terminal knowledge.
 * `npm install`
 * `npm start`
 
-You will be prompted for your GroupMe developer token – _This is not saved anywhere and is only used to make the requests_ – and a GroupMe chat ID number.
+You will be prompted for your GroupMe developer token – _This is only used to make the initial requests_ – and a GroupMe chat ID number.
 
-Assuming all went well, you will now have a `PHOTOS_GALLERY` directory with all of your photos from your GroupMe chat's gallery. 
+Assuming all went well, you will now have a `photos_gallery` directory with all of your photos from your channels gallery. 

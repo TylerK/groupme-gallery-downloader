@@ -1,7 +1,3 @@
-// https://api.groupme.com/v3/conversations/3035126/gallery?before=2015-12-11T22:47:26.1371Z&limit=100
-// https://api.groupme.com/v3/conversations/3035126/gallery?limit=100?token=BEdmtViDKviivkhlCaOjlYBzApqdxBtP0rppzKBI
-// 3035126
-// BEdmtViDKviivkhlCaOjlYBzApqdxBtP0rppzKBI
 import inquirer from 'inquirer';
 import connecter from './lib/connecter';
 import downloader from './lib/downloader';
