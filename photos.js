@@ -12,7 +12,7 @@ let questions = [
     name: 'auth_token',
     message: 'What is your GroupMe token?',
     validate: (input) => {
-      return input.length >= 5 ? true : 'Tokens should be at least 40 characters.'
+      return input.length >= 40 ? true : 'Tokens should be at least 40 characters.'
     }
   },
   {
