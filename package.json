@@ -4,7 +4,7 @@
   "description": "Pulls down all the photos from any GroupMe group you have access too",
   "author": "Tyler Kelley <tylerckelley@gmail.com> (http://twitter.com/_tkwd)",
   "scripts": {
-    "start": "./node_modules/.bin/babel-node ./photos.js"
+    "start": "./node_modules/.bin/babel-node ./index.js"
   },
   "license": "ISC",
   "dependencies": {
