@@ -11,4 +11,6 @@ Git and NodeJS installed, and some basic terminal knowledge.
 
 You will be prompted for your GroupMe developer token – _This is only used to make the initial requests_ – and a GroupMe chat ID number.
 
-Assuming all went well, you will now have a `photos_gallery` directory with all of your photos from your channels gallery. 
+Assuming all went well, you will now have a `photos_gallery` directory semi-rapidly filling up with all of your photos and videos from your channel's gallery. 
+
+_Note:_ So as not to be completly mean to GroupMe's poor beleaguered servers, this will download a single image at a time. Apologies for this taking a bit.
