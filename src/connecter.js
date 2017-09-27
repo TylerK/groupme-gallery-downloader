@@ -4,18 +4,21 @@ import downloader from './downloader';
 
 /**
  * https.request wrapped in a promise
- * @param  {String} GroupMe Developer Token Hash
- * @param  {Integer} GroupMe Chat ID
+ * @param  {String} GroupMe Developer Token ID
+ * @param  {Integer} GroupMe Conversation ID
  * @return {Promise}
  */
-async function galleryConnect (token, id, callback, photos = [], page = '') {
+async function galleryConnect (token, conversation, callback, photos = [], page = '') {
   let data = '';
   let path = '';
 
+  https://api.groupme.com/v3/conversations/3035126/?token=BEdmtViDKviivkhlCaOjlYBzApqdxBtP0rppzKBI
+
+
   if (page) {
-    path = `/v3/conversations/${id}/gallery?before=${page}&limit=100`
+    path = `/v3/conversations/${conversation}/gallery?before=${page}&limit=100`
   } else {
-    path = `/v3/conversations/${id}/gallery?limit=100`
+    path = `/v3/conversations/${conversation}/gallery?limit=100`
   }
 
   let request = https.request({
@@ -43,7 +46,7 @@ async function galleryConnect (token, id, callback, photos = [], page = '') {
 
       if (array.length > 0) {
         let last = array[array.length - 1].gallery_ts;
-        galleryConnect(token, id, callback, photos, last);
+        galleryConnect(token, conversation, callback, photos, last);
       } else {
         return callback(photos);
       }
