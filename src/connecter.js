@@ -1,9 +1,9 @@
-import https from 'https';
 import chalk from 'chalk';
+import apiRequest from './request';
 import downloader from './downloader';
 
 /**
- * https.request wrapped in a promise
+ * Connect to a given group's gallery and build up an array of downloadable photo URL's
  * @param  {String} GroupMe Developer Token ID
  * @param  {Integer} GroupMe Conversation ID
  * @return {Promise}
@@ -12,24 +12,13 @@ async function galleryConnect (token, conversation, callback, photos = [], page 
   let data = '';
   let path = '';
 
-  https://api.groupme.com/v3/conversations/3035126/?token=BEdmtViDKviivkhlCaOjlYBzApqdxBtP0rppzKBI
-
-
   if (page) {
     path = `/v3/conversations/${conversation}/gallery?before=${page}&limit=100`
   } else {
     path = `/v3/conversations/${conversation}/gallery?limit=100`
   }
 
-  let request = https.request({
-    host: 'api.groupme.com',
-    path: path,
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-      'Referer': 'https://app.groupme.com/chats',
-      'X-Access-Token': token
-    }
-  });
+  let request = apiRequest(token, path);
 
   request.on('response', response => {
     console.log(chalk.cyan(`Fetching data from: api.groupme.com${path}`));
@@ -75,12 +64,16 @@ function parsePhotos(data) {
  * @param  {String} GroupMe Developer Token Hash
  * @param  {Integer} GroupMe Chat ID
  */
-export default async function (token, id) {
+export default function (token, id) {
   galleryConnect(token, id, data => {
     downloader(parsePhotos(filterPhotos(data)));
   });
 }
 
+/**
+ * Filter out photos you don't want downloaded
+ * @param {Array} data
+ */
 function filterPhotos(data) {
   return data.filter(photo => {
     return !/(WadeBot)/.test(photo.name);

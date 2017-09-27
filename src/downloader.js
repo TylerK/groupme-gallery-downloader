@@ -12,8 +12,8 @@ let DIR = './photos_gallery';
  * @return {String} '<hash>.<extension>'
  */
 function renameFile (file) {
-  let _url = url.parse(file);
-  let host = _url.hostname;
+  let URL = url.parse(file);
+  let host = URL.hostname;
   let isImage = host === 'i.groupme.com';
   let hash, fileTypes;
 
@@ -49,15 +49,15 @@ export default function (photos) {
   // Recursive downloader
   let downloader = (arr, curr = 0) => {
     if (arr.length) {
+      let URL = arr[0];
 
-      // Move on to the next one if the URL is malformed or undefined.
-      if (!arr[0]) {
+      // Move on to the next one if the URL is doesn't exist, or not a string.
+      if (!arr[0] || typeof URL !== 'string') {
         arr = arr.splice(1, arr.length - 1);
         curr = curr + 1;
         downloader(arr, curr);
       }
 
-      let URL = arr[0];
       let fileName = renameFile(URL);
       let file = fs.createWriteStream(`${DIR}/${fileName}`);
 
