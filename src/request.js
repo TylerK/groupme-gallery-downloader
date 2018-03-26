@@ -1,6 +1,13 @@
 import fetch from 'node-fetch';
 
-export function apiRequest (token, path = '') {
+export const handleResponse = response => {
+  if (response.ok) {
+    return response.json();
+  }
+  throw new Error(response.status);
+}
+
+export default (token, path = '') => {
   const url = `https://api.groupme.com/v3/${path}`
   const options = {
     headers: {

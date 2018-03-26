@@ -1,6 +1,6 @@
-import chalk from 'chalk';
-import apiRequest from './request';
-import downloader from './downloader';
+import chalk from "chalk";
+import apiRequest, { handleResponse } from "./request";
+import downloader from "./downloader";
 
 /**
  * Connect to a given group's gallery and build up an array of downloadable photo URL's
@@ -8,55 +8,42 @@ import downloader from './downloader';
  * @param  {Integer} GroupMe Conversation ID
  * @return {Promise}
  */
-async function galleryConnect (token, conversation, callback, photos = [], page = '') {
-  let data = '';
-  let path = '';
+async function galleryConnect(token, conversation, callback, photos = [], page = "") {
+  let path = page
+    ? `conversations/${conversation}/gallery?before=${page}&limit=100`
+    : `conversations/${conversation}/gallery?limit=100`;
 
-  if (page) {
-    path = `/v3/conversations/${conversation}/gallery?before=${page}&limit=100`
-  } else {
-    path = `/v3/conversations/${conversation}/gallery?limit=100`
-  }
+  await apiRequest(token, path)
+    .then(handleResponse)
+    .then(({ response: { messages }}) => {
+      console.log(chalk.cyan(`Fetching data from: ${path}`));
 
-  let request = apiRequest(token, path);
+      let hasMessages = !!messages.length;
 
-  request.on('response', response => {
-    console.log(chalk.cyan(`Fetching data from: api.groupme.com${path}`));
-
-    response.on('data', chunk => {
-      data += chunk;
-    });
-
-    response.on('end', () => {
-      let parsed = JSON.parse(data.toString());
-      let array = parsed.response.messages;
-
-      photos = photos.concat(array);
-
-      if (array.length > 0) {
-        let last = array[array.length - 1].gallery_ts;
-        galleryConnect(token, conversation, callback, photos, last);
-      } else {
-        return callback(photos);
+      if (hasMessages) {
+        let additionalPhotos = photos.concat(messages);
+        let lastPhotoTimeStamp = messages[messages.length - 1].gallery_ts;
+        return galleryConnect(token, conversation, callback, additionalPhotos, lastPhotoTimeStamp);
       }
+
+      return callback(photos);
+    })
+    .catch(error => {
+      console.log(error);
     });
-  });
-
-  request.end();
-
-  request.on('error', error => {
-    console.error('Error with connector:', error.stack);
-  });
 }
 
 /**
- * parsePhotos() -- Grab the raw image urls and return them in an array
+ * flattenAttachmentsArray() -- Grab the raw image urls and return them in an array
  * @param  {Array} Array of gallery photo objects
- * @return {Array} Array of URL strings
+ * @return {Array} Array of objects containing photo URL and user's name
  */
-function parsePhotos(data) {
+function flattenAttachmentsArray(data) {
   return data.map(photo => {
-    return photo.attachments[0].url;
+    return {
+      url: photo.attachments[0].url,
+      user: photo.name ? photo.name : 'UnknownUser'
+    }
   });
 }
 
@@ -64,18 +51,8 @@ function parsePhotos(data) {
  * @param  {String} GroupMe Developer Token Hash
  * @param  {Integer} GroupMe Chat ID
  */
-export default function (token, id) {
+export default function(token, id) {
   galleryConnect(token, id, data => {
-    downloader(parsePhotos(filterPhotos(data)));
-  });
-}
-
-/**
- * Filter out photos you don't want downloaded
- * @param {Array} data
- */
-function filterPhotos(data) {
-  return data.filter(photo => {
-    return !/(WadeBot)/.test(photo.name);
+    downloader(flattenAttachmentsArray(data));
   });
 }

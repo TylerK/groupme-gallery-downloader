@@ -11,37 +11,46 @@ let DIR = './photos_gallery';
  * @param  {String} URL to a GroupMe image or video
  * @return {String} '<hash>.<extension>'
  */
-function renameFile (file) {
-  let URL = url.parse(file);
+function renameFile(fileUrl, userName) {
+  let URL = url.parse(fileUrl);
   let host = URL.hostname;
   let isImage = host === 'i.groupme.com';
-  let hash, fileTypes;
 
-  if (isImage) {
-    hash = /(.{32})\s*$/.exec(file)[0];
-    fileTypes = /\.(png|jpeg|jpg|gif|bmp)/;
-  } else {
-    hash = /([^/]+$)/.exec(file)[0].split('.')[0];
-    fileTypes = /\.(mp4|mov|wmv|mkv)/;
-  }
+  let imageHash = /(.{32})\s*$/.exec(fileUrl)[0]
+  let videoHash = /([^/]+$)/.exec(fileUrl)[0].split('.')[0];
+  let hash = isImage ? imageHash : videoHash;
 
-  return `${hash}${fileTypes.exec(file)[0]}`;
+  let imageFileTypes =  /\.(png|jpeg|jpg|gif|bmp|webp)/;
+  let videoFileTypes = /\.(mp4|mov|wmv|mkv|webm)/;
+  let fileTypes = isImage ? imageFileTypes : videoFileTypes;
+
+  let possibleFileType = fileTypes.exec(fileUrl);
+  let hasFileType = possibleFileType && possibleFileType.length > 0;
+  let fileType = hasFileType ? possibleFileType[0] : '';
+
+  let user = userName.split(' ').join('_');
+
+  return `${user}__${hash}${fileType}`;
 }
 
 /**
  * @param  {Array} Flat array of GroupMe photo URL's
  * @return {[type]}
  */
-export default function (photos) {
-  let hasDir = fs.existsSync(DIR);
-  let totalPhotos = photos.length;
+export default photosArray => {
+  let photosFolder = fs.existsSync(DIR);
+  let totalPhotos = photosArray.length;
 
-  // Create the photo dump directory
-  if (!hasDir) fs.mkdirSync(DIR);
+  // Create the photo directory
+  if (!photosFolder) {
+    fs.mkdirSync(DIR);
+  }
+
+  let hasFilesInFolder = !!fs.readdirSync(DIR).length;
 
   // If the folder exists and is not empty
-  if (hasDir && !!fs.readdirSync(DIR).length) {
-    console.log(chalk.red(`Error: The directory - ${DIR} - is not empty and can not continue.`));
+  if (photosFolder && hasFilesInFolder) {
+    console.log(chalk.red(`Error: Directory "${DIR}" is not empty and can not continue.`));
     process.exit();
     return;
   }
@@ -49,27 +58,26 @@ export default function (photos) {
   // Recursive downloader
   let downloader = (arr, curr = 0) => {
     if (arr.length) {
-      let URL = arr[0];
+      let { url: URL, user: USER } = arr[0];
 
-      // Move on to the next one if the URL is doesn't exist, or not a string.
-      if (!arr[0] || typeof URL !== 'string') {
+      if (!URL || typeof URL !== 'string') {
         arr = arr.splice(1, arr.length - 1);
         curr = curr + 1;
-        downloader(arr, curr);
+        return downloader(arr, curr);
       }
 
-      let fileName = renameFile(URL);
-      let file = fs.createWriteStream(`${DIR}/${fileName}`);
-
-      // Could probably use https.get here, but still want to spoof being a browser.
       let request = https.request({
         host: url.parse(URL).host,
         path: url.parse(URL).pathname,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-          'Referer': 'https://app.groupme.com/chats'
+          'User-Agent':
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
+          Referer: 'https://app.groupme.com/chats'
         }
       });
+
+      let fileName = renameFile(URL, USER);
+      let file = fs.createWriteStream(`${DIR}/${fileName}`);
 
       request.on('response', response => {
         let total = Number(response.headers['content-length']);
@@ -89,7 +97,7 @@ export default function (photos) {
           file.end();
           arr = arr.splice(1, arr.length - 1);
           curr = curr + 1;
-          downloader(arr, curr);
+          return downloader(arr, curr);
         });
       });
 
@@ -99,9 +107,9 @@ export default function (photos) {
         console.error('Error with connector:', '\n', error.stack);
       });
     }
-  }
+  };
 
-  if (photos.length) {
-    downloader(photos);
+  if (photosArray.length) {
+    downloader(photosArray);
   }
-}
+};
