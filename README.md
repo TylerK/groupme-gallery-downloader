@@ -19,9 +19,7 @@ Download all of the photos in any group you have access to via the command line.
 * `npm install`
 * `npm start`
 
-You will be prompted for your GroupMe access token. 
-
-> Note: This app **does not** store your token, or any other personal information.
+You will be prompted for your GroupMe access token. This app **does not** store your token, or any other personal information.
 
 Assuming all went well, you will now have a `photos_gallery` directory filling up with all of your photos (and videos, _I think_) from your channel's gallery. 
 
