@@ -2,10 +2,8 @@
 Download all of the photos in any group you have access to via the command line.
 
 # What you'll need
-* Git (optional)
-* NodeJS
+* Git and NodeJS installed locally
 * GroupMe Developer ID
-* GroupMe Chat ID
 
 # Where to get your GroupMe Developer ID
 * Go to https://dev.groupme.com/
