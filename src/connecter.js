@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import apiRequest, { handleResponse } from "./request";
 import downloader from "./downloader";
+import db from './db';
 
 /**
  * Connect to a given group's gallery and build up an array of downloadable photo URL's
@@ -9,7 +10,7 @@ import downloader from "./downloader";
  * @return {Promise}
  */
 async function galleryConnect(token, conversation, callback, photos = [], page = "") {
-  let path = page
+  const path = page
     ? `conversations/${conversation}/gallery?before=${page}&limit=100`
     : `conversations/${conversation}/gallery?limit=100`;
 
@@ -18,11 +19,11 @@ async function galleryConnect(token, conversation, callback, photos = [], page =
     .then(({ response: { messages }}) => {
       console.log(chalk.cyan(`Fetching data from: ${path}`));
 
-      let hasMessages = !!messages.length;
+      const hasMessages = !!messages.length;
 
       if (hasMessages) {
-        let additionalPhotos = photos.concat(messages);
-        let lastPhotoTimeStamp = messages[messages.length - 1].gallery_ts;
+        const additionalPhotos = photos.concat(messages);
+        const lastPhotoTimeStamp = messages[messages.length - 1].gallery_ts;
         return galleryConnect(token, conversation, callback, additionalPhotos, lastPhotoTimeStamp);
       }
 
@@ -34,7 +35,7 @@ async function galleryConnect(token, conversation, callback, photos = [], page =
 }
 
 /**
- * flattenAttachmentsArray() -- Grab the raw image urls and return them in an array
+ * Grab the raw image urls and return them in an array
  * @param  {Array} Array of gallery photo objects
  * @return {Array} Array of objects containing photo URL and user's name
  */

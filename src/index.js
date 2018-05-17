@@ -1,6 +1,9 @@
 import inquirer from "inquirer";
 import apiRequest from "./request";
 import connecter from "./connecter";
+import db from './db';
+
+console.log(db.setToken, connecter)
 
 /**
  * [questions array for inquirer]
@@ -19,6 +22,12 @@ let questions = [
   }
 ];
 
+/**
+ * 1. Prompt the user to input their dev ID
+ * 2. Prompt the user to select from a list of available conversations
+ * 3. Pass the auth token and selected conversation Id to the gallery connecter
+ * @param {Object}
+ */
 async function selectGroup({ authToken }) {
   const availableGroups = [];
 
@@ -50,10 +59,14 @@ async function selectGroup({ authToken }) {
     choices: availableGroups
   };
 
-  const selectedGroupId = await inquirer.prompt(question).then(({ groupId }) => groupId);
+  const selectedGroupId = await inquirer
+    .prompt(question)
+    .then(({ groupId }) => groupId);
 
   // Get this party started
+  db.setToken(authToken);
   connecter(authToken, selectedGroupId);
+
   return 'Fetching image data';
 }
 
