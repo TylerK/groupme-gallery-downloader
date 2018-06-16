@@ -3,36 +3,7 @@ import apiRequest, { handleResponse } from "./request";
 import downloader from "./downloader";
 import db from './db';
 
-/**
- * Connect to a given group's gallery and build up an array of downloadable photo URL's
- * @param  {String} GroupMe Developer Token ID
- * @param  {Integer} GroupMe Conversation ID
- * @return {Promise}
- */
-async function galleryConnect(token, conversation, callback, photos = [], page = "") {
-  const path = page
-    ? `conversations/${conversation}/gallery?before=${page}&limit=100`
-    : `conversations/${conversation}/gallery?limit=100`;
 
-  await apiRequest(token, path)
-    .then(handleResponse)
-    .then(({ response: { messages }}) => {
-      console.log(chalk.cyan(`Fetching data from: ${path}`));
-
-      const hasMessages = !!messages.length;
-
-      if (hasMessages) {
-        const additionalPhotos = photos.concat(messages);
-        const lastPhotoTimeStamp = messages[messages.length - 1].gallery_ts;
-        return galleryConnect(token, conversation, callback, additionalPhotos, lastPhotoTimeStamp);
-      }
-
-      return callback(photos);
-    })
-    .catch(error => {
-      console.log(error);
-    });
-}
 
 /**
  * Grab the raw image urls and return them in an array
@@ -49,11 +20,39 @@ function flattenAttachmentsArray(data) {
 }
 
 /**
- * @param  {String} GroupMe Developer Token Hash
- * @param  {Integer} GroupMe Chat ID
+ * Connect to a given group's gallery and build up an array of downloadable photo URL's
+ * @param  {String} GroupMe Developer Token ID
+ * @param  {Integer} GroupMe Conversation ID
+ * @return {Promise}
+ */
+async function mediaListBuilder(token, conversation, photos = [], page = "") {
+  const path = page
+    ? `conversations/${conversation}/gallery?before=${page}&limit=100`
+    : `conversations/${conversation}/gallery?limit=100`;
+
+  await apiRequest(token, path)
+    .then(handleResponse)
+    .then(({ response: { messages }}) => {
+      console.log(chalk.cyan(`Fetching data from: ${path}`));
+
+      const hasMessages = !!messages.length;
+      if (hasMessages) {
+        const additionalPhotos = photos.concat(messages);
+        const lastPhotoTimeStamp = messages[messages.length - 1].gallery_ts;
+        return mediaListBuilder(token, conversation, additionalPhotos, lastPhotoTimeStamp);
+      }
+
+      return flattenAttachmentsArray(photos);
+    })
+    .catch(error => {
+      console.log(error);
+    });
+}
+
+/**
+ * @param {String} GroupMe Developer Token Hash
+ * @param {Integer} GroupMe Chat ID
  */
 export default function(token, id) {
-  galleryConnect(token, id, data => {
-    downloader(flattenAttachmentsArray(data));
-  });
+  mediaListBuilder(token, id);
 }

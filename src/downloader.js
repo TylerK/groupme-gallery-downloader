@@ -12,23 +12,23 @@ let DIR = './photos_gallery';
  * @return {String} '<hash>.<extension>'
  */
 function renameFile(fileUrl, userName) {
-  let URL = url.parse(fileUrl);
-  let host = URL.hostname;
-  let isImage = host === 'i.groupme.com';
+  const URL = url.parse(fileUrl);
+  const host = URL.hostname;
+  const isImage = host === 'i.groupme.com';
 
-  let imageHash = /(.{32})\s*$/.exec(fileUrl)[0]
-  let videoHash = /([^/]+$)/.exec(fileUrl)[0].split('.')[0];
-  let hash = isImage ? imageHash : videoHash;
+  const imageHash = /(.{32})\s*$/.exec(fileUrl)[0];
+  const videoHash = /([^/]+$)/.exec(fileUrl)[0].split('.')[0];
+  const hash = isImage ? imageHash : videoHash;
 
-  let imageFileTypes =  /\.(png|jpeg|jpg|gif|bmp|webp)/;
-  let videoFileTypes = /\.(mp4|mov|wmv|mkv|webm)/;
-  let fileTypes = isImage ? imageFileTypes : videoFileTypes;
+  const imageFileTypes =  /\.(png|jpeg|jpg|gif|bmp|webp)/;
+  const videoFileTypes = /\.(mp4|mov|wmv|mkv|webm)/;
+  const fileTypes = isImage ? imageFileTypes : videoFileTypes;
 
-  let possibleFileType = fileTypes.exec(fileUrl);
-  let hasFileType = possibleFileType && possibleFileType.length > 0;
-  let fileType = hasFileType ? possibleFileType[0] : '';
+  const possibleFileType = fileTypes.exec(fileUrl);
+  const hasFileType = possibleFileType && possibleFileType.length > 0;
+  const fileType = hasFileType ? possibleFileType[0] : '';
 
-  let user = userName.split(' ').join('_');
+  const user = userName.split(' ').join('_');
 
   return `${user}__${hash}${fileType}`;
 }
@@ -38,15 +38,15 @@ function renameFile(fileUrl, userName) {
  * @return {[type]}
  */
 export default photosArray => {
-  let photosFolder = fs.existsSync(DIR);
-  let totalPhotos = photosArray.length;
+  const photosFolder = fs.existsSync(DIR);
+  const totalPhotos = photosArray.length;
 
   // Create the photo directory
   if (!photosFolder) {
     fs.mkdirSync(DIR);
   }
 
-  let hasFilesInFolder = !!fs.readdirSync(DIR).length;
+  const hasFilesInFolder = !!fs.readdirSync(DIR).length;
 
   // If the folder exists and is not empty
   if (photosFolder && hasFilesInFolder) {
@@ -56,7 +56,7 @@ export default photosArray => {
   }
 
   // Recursive downloader
-  let downloader = (arr, curr = 0) => {
+  const downloader = (arr, curr = 0) => {
     if (arr.length) {
       let { url: URL, user: USER } = arr[0];
 
