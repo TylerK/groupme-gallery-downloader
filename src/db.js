@@ -1,8 +1,28 @@
+import fs from 'fs';
 import lowdb from 'lowdb';
 import FileSync from 'lowdb/adapters/FileSync';
 
-const adapter = new FileSync('data/groups.json');
-const db = lowdb(adapter);
+let adapter, db;
+
+/**
+ * Create the db file
+ */
+const createDb = () => {
+  const DB_FILE = './data/groups.json';
+  const scaffoldData = '{ "groups": [], "token": "" }';
+  const hasDb = fs.existsSync(DB_FILE);
+
+  if (!hasDb) {
+    fs.mkdirSync('./data');
+    fs.writeFileSync(DB_FILE, scaffoldData, error => {
+      if (error) throw error;
+      console.log(chalk.green(`Successfuly wrote: ${chalk.white('data/groups.json')}`));
+    });
+  }
+
+  adapter = new FileSync(DB_FILE);
+  db = lowdb(adapter);
+};
 
 /**
  * Cache off the user's developer token
@@ -29,19 +49,17 @@ const deleteToken = () => {
  * Create a new group in the groups array by ID
  * @param {String} id
  */
-const createGroup = async (id) => {
-  const groupExists = await db
+const createGroup = (id) => {
+  const groupExists = db
     .get('groups')
-    .has({ id })
+    .find({ id })
     .value();
-
-  console.log('__GROUP_EXISTS__');
 
   if (groupExists) {
     return;
   }
 
-  await db
+  db
     .get('groups')
     .push({ id, media: [] })
     .write();
@@ -85,6 +103,7 @@ const removeMediaItem = (id, item) => {
 
 export default {
   addMediaItem,
+  createDb,
   createGroup,
   deleteGroup,
   deleteToken,

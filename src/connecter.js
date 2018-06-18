@@ -8,8 +8,8 @@ import db from './db';
  * @param  {Array} Array of gallery photo objects from the API
  * @return {Array} Array of objects containing photo URL and user's name
  */
-function mappedMediaObjects(data) {
-  return data.map(photo => ({
+function mappedMediaObjects(media) {
+  return media.map(photo => ({
     url: photo.attachments[0].url,
     user: photo.name ? photo.name : 'UnknownUser'
   }));
@@ -40,7 +40,7 @@ export async function mediaListBuilder(token, groupId, media = [], page = "") {
         return mediaListBuilder(token, groupId, additionalMedia, lastTimeStamp);
       }
 
-      return mappedMediaObjects({ media, groupId });
+      return mappedMediaObjects(media);
     })
     .catch(error => {
       console.log(error);

@@ -2,7 +2,6 @@ import inquirer from "inquirer";
 import chalk from 'chalk';
 import apiRequest from "./request";
 import { mediaListBuilder } from "./connecter";
-import data from '../data/groups.json';
 import db from './db';
 
 /**
@@ -55,8 +54,8 @@ async function selectGroup(authToken) {
 
   const selectedGroupId = await userSelectGroup(availableGroups);
 
-  await db.setToken(authToken);
-  await db.createGroup(selectedGroupId);
+  db.setToken(authToken);
+  db.createGroup(selectedGroupId);
 
   return mediaListBuilder(authToken, selectedGroupId);
 }
@@ -64,7 +63,8 @@ async function selectGroup(authToken) {
 /**
  * Inquirer and download instantiation
  */
-function main() {
+async function main() {
+  await db.createDb();
   const existingToken = db.getToken();
 
   const questionEnterApiToken = [
