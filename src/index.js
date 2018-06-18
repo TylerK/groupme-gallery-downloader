@@ -81,7 +81,7 @@ function main() {
       {
         type: "confirm",
         name: "cachedToken",
-        message: `Do you want to use your existing token, star: ${tokenShortSha}?`,
+        message: `Do you want to use your existing token: ${tokenShortSha}... ?`,
       }
     ];
 
