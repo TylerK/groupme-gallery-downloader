@@ -9,10 +9,14 @@ const db = lowdb(adapter);
  * @param {String} token
  */
 const setToken = (token) => {
-  db.get('token')
-    .set(token)
+  db.set('token', token)
     .write();
 };
+
+/**
+ * Grab the user's developer token
+ */
+const getToken = () => db.get('token').value();
 
 /**
  * Nuke the user's developer token
@@ -31,11 +35,14 @@ const createGroup = async (id) => {
     .has({ id })
     .value();
 
+  console.log('__GROUP_EXISTS__');
+
   if (groupExists) {
-    return false;
+    return;
   }
 
-  db.get('groups')
+  await db
+    .get('groups')
     .push({ id, media: [] })
     .write();
 };
@@ -77,10 +84,11 @@ const removeMediaItem = (id, item) => {
 };
 
 export default {
+  addMediaItem,
   createGroup,
   deleteGroup,
-  setToken,
   deleteToken,
-  addMediaItem,
+  getToken,
   removeMediaItem,
+  setToken,
 };

@@ -1,57 +1,34 @@
 import inquirer from "inquirer";
+import chalk from 'chalk';
 import apiRequest from "./request";
-import connecter from "./connecter";
+import { mediaListBuilder } from "./connecter";
+import data from '../data/groups.json';
 import db from './db';
 
-console.log(db.setToken, connecter)
-
 /**
- * [questions array for inquirer]
- * @type {Array}
+ * Fetch the groups a user has access to.
+ * @param  {String} authToken
+ * @return {Promise}
  */
-let questions = [
-  {
-    type: "password",
-    name: "authToken",
-    message: "Enter your GroupMe API token:",
-    validate: input => {
-      return input.trim().length <= 9999
-        ? true
-        : "Token appears wrong. Go yell at Tyler to fix this terse validator.";
-    }
-  }
-];
-
-/**
- * 1. Prompt the user to input their dev ID
- * 2. Prompt the user to select from a list of available conversations
- * 3. Pass the auth token and selected conversation Id to the gallery connecter
- * @param {Object}
- */
-async function selectGroup({ authToken }) {
-  const availableGroups = [];
-
-  await apiRequest(authToken, "groups")
+function fetchAvailableGroups(authToken) {
+  return apiRequest(authToken, "groups")
     .then(response => {
       if (response.ok) {
         return response.json();
       }
-      throw new Error(response.status);
+      if (response.status === 401) {
+        throw new Error(chalk.red('Unauthorized, likely an invalid token'));
+      }
     })
-    .then(groups =>
-      groups.response.forEach(({ name, id }) => {
-        availableGroups.push({ name, value: Number(id) });
-      })
-    )
+    .then(({ response }) => (
+      response.map(({ name, id }) => ({ name, value: Number(id) }))
+    ))
     .catch(error => {
-      console.log(error);
-      process.exit();
+      throw new Error(error);
     });
+}
 
-  if (availableGroups.length === 0) {
-    throw new Error("Sorry, no groups were found.");
-  }
-
+function userSelectGroup(availableGroups) {
   const question = {
     type: "list",
     name: "groupId",
@@ -59,22 +36,71 @@ async function selectGroup({ authToken }) {
     choices: availableGroups
   };
 
-  const selectedGroupId = await inquirer
+  return inquirer
     .prompt(question)
     .then(({ groupId }) => groupId);
-
-  // Get this party started
-  db.setToken(authToken);
-  connecter(authToken, selectedGroupId);
-
-  return 'Fetching image data';
 }
 
 /**
- * Inquirer instantiation
+ * Hit the groups API and offer up a list of available groups to the user
+ * @param  {String} User supplied auth token
+ * @return {Promise} Pass back the mediaListBuilder promise
  */
-inquirer
-  .prompt(questions)
-  .then(answers => selectGroup(answers))
-  .then(groupId => console.log(groupId))
-  .catch(error => console.log(error.message));
+async function selectGroup(authToken) {
+  const availableGroups = await fetchAvailableGroups(authToken);
+
+  if (availableGroups.length === 0) {
+    throw new Error(chalk.red("Sorry, no groups were found."));
+  }
+
+  const selectedGroupId = await userSelectGroup(availableGroups);
+
+  await db.setToken(authToken);
+  await db.createGroup(selectedGroupId);
+
+  return mediaListBuilder(authToken, selectedGroupId);
+}
+
+/**
+ * Inquirer and download instantiation
+ */
+function main() {
+  const existingToken = db.getToken();
+
+  const questionEnterApiToken = [
+    {
+      type: "input",
+      name: "authToken",
+      message: "Enter your GroupMe API token:",
+    }
+  ];
+
+  if (existingToken) {
+    const tokenShortSha = chalk.yellow(existingToken.substr(0, 7));
+    const questions = [
+      {
+        type: "confirm",
+        name: "cachedToken",
+        message: `Do you want to use your existing token, star: ${tokenShortSha}?`,
+      }
+    ];
+
+    inquirer
+      .prompt(questions)
+      .then(({ cachedToken }) => {
+        if (cachedToken) {
+          return selectGroup(existingToken);
+        } else {
+          inquirer
+            .prompt(questionEnterApiToken)
+            .then(({ authToken }) => selectGroup(authToken));
+        }
+      });
+  } else {
+    inquirer
+      .prompt(questionEnterApiToken)
+      .then(({ authToken }) => selectGroup(authToken));
+  }
+}
+
+main();

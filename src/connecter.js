@@ -3,56 +3,46 @@ import apiRequest, { handleResponse } from "./request";
 import downloader from "./downloader";
 import db from './db';
 
-
-
 /**
- * Grab the raw image urls and return them in an array
- * @param  {Array} Array of gallery photo objects
+ * Shrink the data down to only what's necessary: Photo URL's and user names.
+ * @param  {Array} Array of gallery photo objects from the API
  * @return {Array} Array of objects containing photo URL and user's name
  */
-function flattenAttachmentsArray(data) {
-  return data.map(photo => {
-    return {
-      url: photo.attachments[0].url,
-      user: photo.name ? photo.name : 'UnknownUser'
-    }
-  });
+function mappedMediaObjects(data) {
+  return data.map(photo => ({
+    url: photo.attachments[0].url,
+    user: photo.name ? photo.name : 'UnknownUser'
+  }));
 }
 
 /**
- * Connect to a given group's gallery and build up an array of downloadable photo URL's
+ * Connect to a given group's gallery and build up an array of downloadable media URL's
  * @param  {String} GroupMe Developer Token ID
  * @param  {Integer} GroupMe Conversation ID
+ * @param  {Array} Array of media objects
+ * @param  {String} Current page
  * @return {Promise}
  */
-async function mediaListBuilder(token, conversation, photos = [], page = "") {
+export async function mediaListBuilder(token, groupId, media = [], page = "") {
   const path = page
-    ? `conversations/${conversation}/gallery?before=${page}&limit=100`
-    : `conversations/${conversation}/gallery?limit=100`;
+    ? `conversations/${groupId}/gallery?before=${page}&limit=100`
+    : `conversations/${groupId}/gallery?limit=100`;
 
-  await apiRequest(token, path)
+  return await apiRequest(token, path)
     .then(handleResponse)
-    .then(({ response: { messages }}) => {
-      console.log(chalk.cyan(`Fetching data from: ${path}`));
-
+    .then(({ response: { messages } }) => {
+      console.log(chalk.cyan(`Fetching data from: ${chalk.green(path)}`));
       const hasMessages = !!messages.length;
+
       if (hasMessages) {
-        const additionalPhotos = photos.concat(messages);
-        const lastPhotoTimeStamp = messages[messages.length - 1].gallery_ts;
-        return mediaListBuilder(token, conversation, additionalPhotos, lastPhotoTimeStamp);
+        const additionalMedia = media.concat(messages);
+        const lastTimeStamp = messages[messages.length - 1].gallery_ts;
+        return mediaListBuilder(token, groupId, additionalMedia, lastTimeStamp);
       }
 
-      return flattenAttachmentsArray(photos);
+      return mappedMediaObjects({ media, groupId });
     })
     .catch(error => {
       console.log(error);
     });
-}
-
-/**
- * @param {String} GroupMe Developer Token Hash
- * @param {Integer} GroupMe Chat ID
- */
-export default function(token, id) {
-  mediaListBuilder(token, id);
 }
