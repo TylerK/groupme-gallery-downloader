@@ -1,6 +1,5 @@
 import chalk from "chalk";
 import apiRequest, { handleResponse } from "./request";
-import downloader from "./downloader";
 import db from './db';
 
 /**
@@ -40,7 +39,9 @@ export async function mediaListBuilder(token, groupId, media = [], page = "") {
         return mediaListBuilder(token, groupId, additionalMedia, lastTimeStamp);
       }
 
-      return mappedMediaObjects(media);
+      const mediaDownloadArray = mappedMediaObjects(media);
+      db.addMedia(groupId, mediaDownloadArray);
+      return { media: mediaDownloadArray, groupId };
     })
     .catch(error => {
       console.log(error);

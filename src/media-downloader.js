@@ -1,10 +1,13 @@
 import ProgressBar from 'progress';
 import chalk from 'chalk';
 import https from 'https';
-import fs from 'fs';
 import url from 'url';
+import fs from 'fs';
+import db from './db';
 
-let DIR = './photos_gallery';
+const DIR = './photos_gallery';
+const IMAGE_FILE_TYPES =  /\.(png|jpeg|jpg|gif|bmp|webp)/;
+const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
 
 /**
  * All GroupMe photos either are, or end with, a 32 digit hash.
@@ -14,59 +17,43 @@ let DIR = './photos_gallery';
 function renameFile(fileUrl, userName) {
   const URL = url.parse(fileUrl);
   const host = URL.hostname;
+
+  // This is the only reliable way to determine if a download is an image
+  // due to groupme sometimes not bothering giving a file an extension.
+  // Someday I'll write something to crack open the file and get the headers
+  // ¯\_(ツ)_/¯
   const isImage = host === 'i.groupme.com';
 
   const imageHash = /(.{32})\s*$/.exec(fileUrl)[0];
   const videoHash = /([^/]+$)/.exec(fileUrl)[0].split('.')[0];
-  const hash = isImage ? imageHash : videoHash;
-
-  const imageFileTypes =  /\.(png|jpeg|jpg|gif|bmp|webp)/;
-  const videoFileTypes = /\.(mp4|mov|wmv|mkv|webm)/;
-  const fileTypes = isImage ? imageFileTypes : videoFileTypes;
-
+  const fileTypes = isImage ? IMAGE_FILE_TYPES : VIDEO_FILE_TYPES;
   const possibleFileType = fileTypes.exec(fileUrl);
   const hasFileType = possibleFileType && possibleFileType.length > 0;
-  const fileType = hasFileType ? possibleFileType[0] : '';
 
+  const fileType = hasFileType ? possibleFileType[0] : '';
+  const hash = isImage ? imageHash : videoHash;
   const user = userName.split(' ').join('_');
 
-  return `${user}__${hash}${fileType}`;
+  return `${user}-${hash}${fileType}`;
 }
 
 /**
- * @param  {Array} Flat array of GroupMe photo URL's
- * @return {[type]}
+ * @param  {Array} User selected group Id
+ * @return {Void}
  */
-export default photosArray => {
-  const photosFolder = fs.existsSync(DIR);
-  const totalPhotos = photosArray.length;
-
-  // Create the photo directory
-  if (!photosFolder) {
-    fs.mkdirSync(DIR);
-  }
-
-  const hasFilesInFolder = !!fs.readdirSync(DIR).length;
-
-  // If the folder exists and is not empty
-  if (photosFolder && hasFilesInFolder) {
-    console.log(chalk.red(`Error: Directory "${DIR}" is not empty and can not continue.`));
-    process.exit();
-    return;
-  }
+ export function mediaDownloader({ media, groupId }) {
 
   // Recursive downloader
-  const downloader = (arr, curr = 0) => {
+  const downloader = arr => {
     if (arr.length) {
       let { url: URL, user: USER } = arr[0];
 
       if (!URL || typeof URL !== 'string') {
-        arr = arr.splice(1, arr.length - 1);
-        curr = curr + 1;
-        return downloader(arr, curr);
+        db.removeMediaItem(groupId, { url: URL });
+        return downloader(db.getMedia(id));
       }
 
-      let request = https.request({
+      const request = https.request({
         host: url.parse(URL).host,
         path: url.parse(URL).pathname,
         headers: {
@@ -76,12 +63,12 @@ export default photosArray => {
         }
       });
 
-      let fileName = renameFile(URL, USER);
-      let file = fs.createWriteStream(`${DIR}/${fileName}`);
+      const fileName = renameFile(URL, USER);
+      const file = fs.createWriteStream(`${DIR}/${fileName}`);
 
       request.on('response', response => {
-        let total = Number(response.headers['content-length']);
-        let bar = new ProgressBar(`Downloading [:bar] [${curr} / ${totalPhotos}]`, {
+        const total = Number(response.headers['content-length']);
+        const bar = new ProgressBar(`Downloading [:bar] [${curr} / ${totalPhotos}]`, {
           complete: '=',
           incomplete: '-',
           width: 20,
@@ -95,9 +82,8 @@ export default photosArray => {
 
         response.on('end', () => {
           file.end();
-          arr = arr.splice(1, arr.length - 1);
-          curr = curr + 1;
-          return downloader(arr, curr);
+          db.removeMediaItem(groupId, { url: URL });
+          return downloader(db.getMedia(id));
         });
       });
 
@@ -109,7 +95,7 @@ export default photosArray => {
     }
   };
 
-  if (photosArray.length) {
-    downloader(photosArray);
+  if (media.length) {
+    downloader(media);
   }
 };

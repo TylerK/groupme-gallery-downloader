@@ -1,7 +1,8 @@
 import inquirer from "inquirer";
 import chalk from 'chalk';
 import apiRequest from "./request";
-import { mediaListBuilder } from "./connecter";
+import { mediaListBuilder } from "./media-list-builder";
+import { mediaDownloader } from './media-downloader';
 import db from './db';
 
 /**
@@ -57,16 +58,22 @@ async function selectGroup(authToken) {
   db.setToken(authToken);
   db.createGroup(selectedGroupId);
 
-  return mediaListBuilder(authToken, selectedGroupId);
+  return { authToken, selectedGroupId };
+}
+
+async function processData(token) {
+  const { authToken, selectedGroupId } = await selectGroup(token);
+  const mediaList = await mediaListBuilder(authToken, selectedGroupId);
+  mediaDownloader(mediaList);
 }
 
 /**
  * Inquirer and download instantiation
  */
-async function main() {
-  await db.createDb();
-  const existingToken = db.getToken();
+async function init() {
+  db.createDb();
 
+  const existingToken = db.getToken();
   const questionEnterApiToken = [
     {
       type: "input",
@@ -89,18 +96,18 @@ async function main() {
       .prompt(questions)
       .then(({ cachedToken }) => {
         if (cachedToken) {
-          return selectGroup(existingToken);
+          processData(existingToken);
         } else {
           inquirer
             .prompt(questionEnterApiToken)
-            .then(({ authToken }) => selectGroup(authToken));
+            .then(({ authToken }) => { processData(authToken); });
         }
       });
   } else {
     inquirer
       .prompt(questionEnterApiToken)
-      .then(({ authToken }) => selectGroup(authToken));
+      .then(({ authToken }) => { processData(authToken); });
   }
 }
 
-main();
+init();

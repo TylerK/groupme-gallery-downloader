@@ -5,7 +5,7 @@ import FileSync from 'lowdb/adapters/FileSync';
 let adapter, db;
 
 /**
- * Create the db file
+ * If a local DB doesn't exist, create it.
  */
 const createDb = () => {
   const DB_FILE = './data/groups.json';
@@ -55,7 +55,7 @@ const createGroup = (id) => {
     .find({ id })
     .value();
 
-  if (groupExists) {
+  if (!!groupExists) {
     return;
   }
 
@@ -76,37 +76,49 @@ const deleteGroup = (id) => {
 };
 
 /**
- * Add an image or video to download to a group by id
+ * Add media to download to a group by id
  * @param {String} id
- * @param {Object} item
+ * @param {Object} media
  */
-const addMediaItem = (id, item) => {
+const addMedia = (id, media) => {
   db.get('groups')
     .find({ id })
-    .get('media')
-    .push(item)
+    .set('media', media)
     .write();
 };
 
 /**
- * Nuke an image or video to download to a group by id
+ * Grab media to download by group
  * @param {String} id
- * @param {Object} item
+ * @param {Object} media
  */
-const removeMediaItem = (id, item) => {
+const getMedia = (id) => {
   db.get('groups')
     .find({ id })
     .get('media')
-    .remove(item)
+    .value();
+};
+
+/**
+ * Nuke an image or video to download to a group by url
+ * @param {String} id
+ * @param {Object} item
+ */
+const removeMediaItem = (id, url) => {
+  db.get('groups')
+    .find({ id })
+    .get('media')
+    .remove({ url })
     .write();
 };
 
 export default {
-  addMediaItem,
+  addMedia,
   createDb,
   createGroup,
   deleteGroup,
   deleteToken,
+  getMedia,
   getToken,
   removeMediaItem,
   setToken,
