@@ -2,10 +2,11 @@ import ProgressBar from 'progress';
 import chalk from 'chalk';
 import https from 'https';
 import url from 'url';
+import path from 'path';
 import fs from 'fs';
 import db from './db';
 
-const DIR = './photos_gallery';
+const MEDIA_DIR = path.resolve(__dirname, '../', 'media');
 const IMAGE_FILE_TYPES =  /\.(png|jpeg|jpg|gif|bmp|webp)/;
 const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
 
@@ -42,13 +43,22 @@ function renameFile(fileUrl, userName) {
  * @return {Void}
  */
  export function mediaDownloader({ media, groupId }) {
+  const TOTAL_PHOTOS = media.length;
+  const MEDIA_DIR_EXISTS = fs.existsSync(MEDIA_DIR);
+  let GROUP_MEDIA_DIR;
 
-  // Recursive downloader
-  const downloader = arr => {
+  if (!MEDIA_DIR_EXISTS) {
+    GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, groupId);
+    fs.mkdirSync(MEDIA_DIR);
+    fs.mkdirSync(GROUP_MEDIA_DIR);
+  }
+
+  const downloader = (arr, curr = 0) => {
     if (arr.length) {
       let { url: URL, user: USER } = arr[0];
 
       if (!URL || typeof URL !== 'string') {
+        curr = curr + 1;
         db.removeMediaItem(groupId, { url: URL });
         return downloader(db.getMedia(id));
       }
@@ -64,11 +74,11 @@ function renameFile(fileUrl, userName) {
       });
 
       const fileName = renameFile(URL, USER);
-      const file = fs.createWriteStream(`${DIR}/${fileName}`);
+      const file = fs.createWriteStream(`${GROUP_MEDIA_DIR}/${fileName}`);
 
       request.on('response', response => {
         const total = Number(response.headers['content-length']);
-        const bar = new ProgressBar(`Downloading [:bar] [${curr} / ${totalPhotos}]`, {
+        const bar = new ProgressBar(`Downloading [:bar] [${curr} / ${TOTAL_PHOTOS}]`, {
           complete: '=',
           incomplete: '-',
           width: 20,
@@ -82,8 +92,9 @@ function renameFile(fileUrl, userName) {
 
         response.on('end', () => {
           file.end();
+          curr = curr + 1;
           db.removeMediaItem(groupId, { url: URL });
-          return downloader(db.getMedia(id));
+          return downloader(db.getMedia(groupId));
         });
       });
 

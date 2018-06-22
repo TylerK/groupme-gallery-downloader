@@ -21,7 +21,7 @@ function fetchAvailableGroups(authToken) {
       }
     })
     .then(({ response }) => (
-      response.map(({ name, id }) => ({ name, value: Number(id) }))
+      response.map(({ name, id }) => ({ name, value: id }))
     ))
     .catch(error => {
       throw new Error(error);
@@ -53,17 +53,17 @@ async function selectGroup(authToken) {
     throw new Error(chalk.red("Sorry, no groups were found."));
   }
 
-  const selectedGroupId = await userSelectGroup(availableGroups);
+  const groupId = await userSelectGroup(availableGroups);
 
   db.setToken(authToken);
-  db.createGroup(selectedGroupId);
+  db.createGroup(groupId);
 
-  return { authToken, selectedGroupId };
+  return { authToken, groupId };
 }
 
 async function processData(token) {
-  const { authToken, selectedGroupId } = await selectGroup(token);
-  const mediaList = await mediaListBuilder(authToken, selectedGroupId);
+  const { authToken, groupId } = await selectGroup(token);
+  const mediaList = await mediaListBuilder(authToken, groupId);
   mediaDownloader(mediaList);
 }
 
