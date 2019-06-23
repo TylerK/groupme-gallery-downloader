@@ -1,10 +1,11 @@
-import chalk from "chalk";
-import apiRequest, { handleResponse } from "./request";
+import chalk from 'chalk';
+import apiRequest, { handleResponse } from './request';
 import db from './db';
 
 /**
  * Shrink the data down to only what's necessary: Photo URL's and user names.
- * @param  {Array} Array of gallery photo objects from the API
+ *
+ * @param  {Array} media Array of gallery photo objects from the API
  * @return {Array} Array of objects containing photo URL and user's name
  */
 function mappedMediaObjects(media) {
@@ -15,14 +16,16 @@ function mappedMediaObjects(media) {
 }
 
 /**
- * Connect to a given group's gallery and build up an array of downloadable media URL's
- * @param  {String} GroupMe Developer Token ID
- * @param  {Integer} GroupMe Conversation ID
- * @param  {Array} Array of media objects
- * @param  {String} Current page
+ * Connect to a given group's gallery and recursively
+ * build up an array of downloadable media URL's
+ *
+ * @param  {String} token GroupMe Developer Token ID
+ * @param  {Integer} groupId GroupMe Conversation ID
+ * @param  {Array} media Array of media objects
+ * @param  {String} page Current page
  * @return {Promise}
  */
-export async function mediaListBuilder(token, groupId, media = [], page = "") {
+export async function mediaListBuilder(token, groupId, media = [], page = '') {
   const path = page
     ? `conversations/${groupId}/gallery?before=${page}&limit=100`
     : `conversations/${groupId}/gallery?limit=100`;
@@ -44,6 +47,6 @@ export async function mediaListBuilder(token, groupId, media = [], page = "") {
       return { media: mediaDownloadArray, groupId };
     })
     .catch(error => {
-      console.log(error);
+      throw new Error(error);
     });
 }

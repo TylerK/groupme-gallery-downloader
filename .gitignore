@@ -1,5 +1,5 @@
-photos_gallery/
 node_modules/
+media/
 dist/
 data/
 *.DS_Store

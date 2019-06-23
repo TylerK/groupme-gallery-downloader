@@ -1,5 +1,4 @@
 import ProgressBar from 'progress';
-import chalk from 'chalk';
 import https from 'https';
 import url from 'url';
 import path from 'path';
@@ -7,11 +6,14 @@ import fs from 'fs';
 import db from './db';
 
 const MEDIA_DIR = path.resolve(__dirname, '../', 'media');
-const IMAGE_FILE_TYPES =  /\.(png|jpeg|jpg|gif|bmp|webp)/;
+const IMAGE_FILE_TYPES = /\.(png|jpeg|jpg|gif|bmp|webp)/;
 const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
 
 /**
  * All GroupMe photos either are, or end with, a 32 digit hash.
+ * Groupme file names aren't consistent, so we need to do a bunch
+ * of checking and guarding against these inconsistencies
+ *
  * @param  {String} URL to a GroupMe image or video
  * @return {String} '<hash>.<extension>'
  */
@@ -25,35 +27,65 @@ function renameFile(fileUrl, userName) {
   // ¯\_(ツ)_/¯
   const isImage = host === 'i.groupme.com';
 
+  // Grab the first 32 chars of each image name
   const imageHash = /(.{32})\s*$/.exec(fileUrl)[0];
+
+  // Video URL's
   const videoHash = /([^/]+$)/.exec(fileUrl)[0].split('.')[0];
+
+  // I think I accounted for all possible filetypes Groupme supports.
+  // Knowing them, this will error out somehow. #notbitter.
   const fileTypes = isImage ? IMAGE_FILE_TYPES : VIDEO_FILE_TYPES;
+
+  // Maybe it's a file? Probably worth checking later...
   const possibleFileType = fileTypes.exec(fileUrl);
+
+  // Super naive filetype check
   const hasFileType = possibleFileType && possibleFileType.length > 0;
 
+  // Maybe not a filetype?
   const fileType = hasFileType ? possibleFileType[0] : '';
+
+  // Which hash to use
   const hash = isImage ? imageHash : videoHash;
+
+  // Filesystem safe string for usernames
   const user = userName.split(' ').join('_');
 
+  // Final filename
   return `${user}-${hash}${fileType}`;
+}
+
+function requestMediaItem(mediaUrl) {
+  return https.request({
+    host: url.parse(mediaUrl).host,
+    path: url.parse(mediaUrl).pathname,
+    headers: {
+      'User-Agent':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
+      Referer: 'https://app.groupme.com/chats'
+    }
+  });
 }
 
 /**
  * @param  {Array} User selected group Id
  * @return {Void}
  */
- export function mediaDownloader({ media, groupId }) {
+export function mediaDownloader({ media, groupId }) {
   const TOTAL_PHOTOS = media.length;
   const MEDIA_DIR_EXISTS = fs.existsSync(MEDIA_DIR);
-  let GROUP_MEDIA_DIR;
+
+  let GROUP_MEDIA_DIR = '';
 
   if (!MEDIA_DIR_EXISTS) {
+    fs.mkdirSync(`${MEDIA_DIR}/${groupId}`, { recursive: true });
     GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, groupId);
-    fs.mkdirSync(MEDIA_DIR);
-    fs.mkdirSync(GROUP_MEDIA_DIR);
+  } else {
+    GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, groupId);
   }
 
-  const downloader = (arr, curr = 0) => {
+  const downloader = (arr, curr = 1) => {
     if (arr.length) {
       let { url: URL, user: USER } = arr[0];
 
@@ -63,18 +95,9 @@ function renameFile(fileUrl, userName) {
         return downloader(db.getMedia(id));
       }
 
-      const request = https.request({
-        host: url.parse(URL).host,
-        path: url.parse(URL).pathname,
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-          Referer: 'https://app.groupme.com/chats'
-        }
-      });
-
       const fileName = renameFile(URL, USER);
       const file = fs.createWriteStream(`${GROUP_MEDIA_DIR}/${fileName}`);
+      const request = requestMediaItem(URL);
 
       request.on('response', response => {
         const total = Number(response.headers['content-length']);
@@ -94,19 +117,19 @@ function renameFile(fileUrl, userName) {
           file.end();
           curr = curr + 1;
           db.removeMediaItem(groupId, { url: URL });
-          return downloader(db.getMedia(groupId));
+          return downloader(db.getMedia(groupId), curr);
         });
       });
 
       request.end();
 
       request.on('error', error => {
-        console.error('Error with connector:', '\n', error.stack);
+        throw new Error(error);
       });
     }
   };
 
-  if (media.length) {
+  if (!!media.length) {
     downloader(media);
   }
-};
+}
