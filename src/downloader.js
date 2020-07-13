@@ -5,6 +5,15 @@ import fs from 'fs';
 import url from 'url';
 
 let DIR = './photos_gallery';
+let dateArr = [];
+
+function assignModifiedDates() {
+  for(let item of dateArr) {
+    var mtime = item.createdDate;
+    var atime = item.createdDate;
+    fs.utimesSync(`${DIR}/${item.fileName}`, mtime, atime);
+  }
+}
 
 /**
  * All GroupMe photos either are, or end with, a 32 digit hash.
@@ -58,7 +67,7 @@ export default photosArray => {
   // Recursive downloader
   let downloader = (arr, curr = 0) => {
     if (arr.length) {
-      let { url: URL, user: USER } = arr[0];
+      let { url: URL, user: USER, created } = arr[0];
 
       if (!URL || typeof URL !== 'string') {
         arr = arr.splice(1, arr.length - 1);
@@ -95,6 +104,7 @@ export default photosArray => {
 
         response.on('end', () => {
           file.end();
+          dateArr.push({fileName: fileName, createdDate: created});
           arr = arr.splice(1, arr.length - 1);
           curr = curr + 1;
           return downloader(arr, curr);
@@ -106,6 +116,9 @@ export default photosArray => {
       request.on('error', error => {
         console.error('Error with connector:', '\n', error.stack);
       });
+    } else {
+      // After the recursive downloading we need to assign EXIF Data
+      assignModifiedDates();
     }
   };
 

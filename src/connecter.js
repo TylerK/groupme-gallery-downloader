@@ -42,7 +42,8 @@ function flattenAttachmentsArray(data) {
   return data.map(photo => {
     return {
       url: photo.attachments[0].url,
-      user: photo.name ? photo.name : 'UnknownUser'
+      user: photo.name ? photo.name : 'UnknownUser',
+      created: photo["created_at"]
     }
   });
 }
