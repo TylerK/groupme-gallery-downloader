@@ -14,6 +14,9 @@ const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
  * Groupme file names aren't consistent, so we need to do a bunch
  * of checking and guarding against these inconsistencies
  *
+ * An image URL could be any of the following:
+ *   - http://i.groupme.com/06a398bdf6bd9db15f47a27f72fcecea
+ *
  * @param  {String} URL to a GroupMe image or video
  * @return {String} '<hash>.<extension>'
  */
@@ -34,7 +37,7 @@ function renameFile(fileUrl, userName) {
   const videoHash = /([^/]+$)/.exec(fileUrl)[0].split('.')[0];
 
   // I think I accounted for all possible filetypes Groupme supports.
-  // Knowing them, this will error out somehow. #notbitter.
+  // Knowing them, this will eventually error out somehow.
   const fileTypes = isImage ? IMAGE_FILE_TYPES : VIDEO_FILE_TYPES;
 
   // Maybe it's a file? Probably worth checking later...
@@ -43,14 +46,25 @@ function renameFile(fileUrl, userName) {
   // Super naive filetype check
   const hasFileType = possibleFileType && possibleFileType.length > 0;
 
-  // Maybe not a filetype?
-  const fileType = hasFileType ? possibleFileType[0] : '';
-
   // Which hash to use
   const hash = isImage ? imageHash : videoHash;
 
   // Filesystem safe string for usernames
   const user = userName.split(' ').join('_');
+
+  // To the best of my knowledge, GroupMe strips EXIF data.
+  // Which would be immensely fucking useful here.
+  let fileType = '';
+  if (hasFileType) {
+    fileType = possibleFileType[0];
+  } else {
+    // Most common media formats on GroupMe. This could be wrong. Again, EXIF Data would be useful.
+    if (isImage) {
+      fileType = '.jpg';
+    } else {
+      fileType = '.mp4';
+    }
+  }
 
   // Final filename
   return `${user}-${hash}${fileType}`;
@@ -63,8 +77,8 @@ function requestMediaItem(mediaUrl) {
     headers: {
       'User-Agent':
         'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-      Referer: 'https://app.groupme.com/chats'
-    }
+      Referer: 'https://app.groupme.com/chats',
+    },
   });
 }
 
@@ -74,14 +88,15 @@ function requestMediaItem(mediaUrl) {
  */
 export function mediaDownloader({ media, groupId }) {
   const TOTAL_PHOTOS = media.length;
-  const MEDIA_DIR_EXISTS = fs.existsSync(MEDIA_DIR);
 
-  let GROUP_MEDIA_DIR = '';
+  if (!fs.existsSync(MEDIA_DIR)) {
+    fs.mkdirSync(MEDIA_DIR);
+  }
 
-  if (!MEDIA_DIR_EXISTS) {
+  let GROUP_MEDIA_DIR;
+
+  if (!fs.existsSync(`${MEDIA_DIR}/${groupId}`)) {
     fs.mkdirSync(`${MEDIA_DIR}/${groupId}`, { recursive: true });
-    GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, groupId);
-  } else {
     GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, groupId);
   }
 
@@ -96,19 +111,27 @@ export function mediaDownloader({ media, groupId }) {
       }
 
       const fileName = renameFile(URL, USER);
-      const file = fs.createWriteStream(`${GROUP_MEDIA_DIR}/${fileName}`);
+
+      let file;
+
+      try {
+        file = fs.createWriteStream(`${GROUP_MEDIA_DIR}/${fileName}`);
+      } catch (error) {
+        console.log(error);
+      }
+
       const request = requestMediaItem(URL);
 
-      request.on('response', response => {
+      request.on('response', (response) => {
         const total = Number(response.headers['content-length']);
         const bar = new ProgressBar(`Downloading [:bar] [${curr} / ${TOTAL_PHOTOS}]`, {
           complete: '=',
           incomplete: '-',
           width: 20,
-          total: total
+          total: total,
         });
 
-        response.on('data', chunk => {
+        response.on('data', (chunk) => {
           file.write(chunk);
           bar.tick(chunk.length);
         });
@@ -123,7 +146,7 @@ export function mediaDownloader({ media, groupId }) {
 
       request.end();
 
-      request.on('error', error => {
+      request.on('error', (error) => {
         throw new Error(error);
       });
     }
