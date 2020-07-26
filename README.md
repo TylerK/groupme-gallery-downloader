@@ -17,8 +17,6 @@ Download all of the photos in any group you have access to via the command line.
 * `npm install`
 * `npm start`
 
-You will be prompted for your GroupMe access token. This app **does not** store your token, or any other personal information.
+You will be prompted for your GroupMe access token. Go ahead and paste it in and press enter. Assuming all went well, you will now be able to select a group you have access to. Select a group and you should see a stream of photos filling up a newly created `photos` folder. 
 
-Assuming all went well, you will now have a `photos_gallery` directory filling up with all of your photos (and videos, _I think_) from your channel's gallery. 
-
-> Note: There is no "restart from where I left off" feature, so if it dies halfway through it will need to start from scratch. Apologies for my laziness, pull requests welcome. ;]
+> Note: There is no "restart from where I left off" feature currently - [It's in the works, I swear!](https://github.com/TylerK/groupme-gallery-downloader/pull/10) - This means that if the download dies for any reason you need to restart. Huge galleries beware.
