@@ -138,9 +138,10 @@ export function mediaDownloader({ media, id }) {
           file.end(() => {
             // Change the local file system's timestamp to the original upload date of the file
             fs.utimesSync(`${GROUP_MEDIA_DIR}/${fileName}`, CREATED_AT, CREATED_AT);
-            curr = curr + 1;
-            db.removeMediaItem(id, { url: URL });
           });
+
+          curr = curr + 1;
+          db.removeMediaItem(id, { url: URL });
 
           return downloader(db.getMedia(id), curr);
         });
