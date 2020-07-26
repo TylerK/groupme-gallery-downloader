@@ -13,14 +13,14 @@ import db from './db';
  */
 async function fetchAvailableGroups(authToken) {
   return apiRequest(authToken, 'groups')
-    .then(response => {
+    .then((response) => {
       if (response.status === 401) {
         throw new Error(chalk.red('Unauthorized, likely an invalid token'));
       }
       return response.json();
     })
     .then(({ response }) => response.map(({ name, id }) => ({ name, value: id })))
-    .catch(error => {
+    .catch((error) => {
       throw new Error(error);
     });
 }
@@ -33,12 +33,12 @@ async function fetchAvailableGroups(authToken) {
 function selectGroup(availableGroups) {
   const question = {
     type: 'list',
-    name: 'groupId',
+    name: 'id',
     message: 'Select a group',
-    choices: availableGroups
+    choices: availableGroups,
   };
 
-  return inquirer.prompt(question).then(({ groupId }) => groupId);
+  return inquirer.prompt(question).then(({ id }) => id);
 }
 
 /**
@@ -54,25 +54,41 @@ async function selectFromAvailableGroups(authToken) {
     throw new Error(chalk.red('Sorry, no groups were found.'));
   }
 
-  const groupId = await selectGroup(availableGroups);
+  const id = await selectGroup(availableGroups);
 
   db.setToken(authToken);
-  db.createGroup(groupId);
+  db.createGroup(id);
 
-  return { authToken, groupId };
+  return { authToken, id };
 }
 
 /**
- * Function called once we have a supplied developer
- * access token from main()
+ * Function called once we have a supplied developer access token from main()
+ *
+ * Note: This is a very boolean decision whether to pull from local or remote.
+ *       If a local group DB exists it will pull from there instead of remote.
+ *
+ * TODO: Make better decisions. If a user is mid-download and restarts, this _should_
+ *       check remote to see if anything new has been uploaded and append those items
+ *       local cache of undownloaded media.
  *
  * @param {string} token Supplied developer token
  * @returns void
  */
 async function processGroupmeData(token) {
-  const { authToken, groupId } = await selectFromAvailableGroups(token);
-  const mediaList = await mediaListBuilder(authToken, groupId);
-  mediaDownloader(mediaList);
+  const { authToken, id } = await selectFromAvailableGroups(token);
+
+  const localGroupData = db.getGroup(id);
+
+  if (localGroupData.media && !!localGroupData.media.length) {
+    console.log(
+      `Restarting where you left off. ${chalk.green(localGroupData.media.length)} downloads to go!`
+    );
+    mediaDownloader(localGroupData);
+  } else {
+    const mediaListFromRemote = await mediaListBuilder(authToken, id);
+    mediaDownloader(mediaListFromRemote);
+  }
 }
 
 /**
@@ -86,8 +102,8 @@ async function main() {
     {
       type: 'input',
       name: 'authToken',
-      message: 'Enter your GroupMe API token:'
-    }
+      message: 'Enter your GroupMe API token:',
+    },
   ];
 
   if (existingToken) {
@@ -96,8 +112,8 @@ async function main() {
       {
         type: 'confirm',
         name: 'cachedToken',
-        message: `Do you want to use your existing token: ${tokenShortSha}... ?`
-      }
+        message: `Do you want to use your existing token: ${tokenShortSha}... ?`,
+      },
     ];
 
     inquirer.prompt(questions).then(({ cachedToken }) => {

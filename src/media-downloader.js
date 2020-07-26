@@ -15,7 +15,12 @@ const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
  * of checking and guarding against these inconsistencies
  *
  * An image URL could be any of the following:
- *   - http://i.groupme.com/06a398bdf6bd9db15f47a27f72fcecea
+ *   - https://i.groupme.com/06a398bdf6bd9db15f47a27f72fcecea
+ *   - https://i.groupme.com/999x999.jpeg.06a398bdf6bd9db15f47a27f72fcecea
+ *   - https://i.groupme.com/999x999.jpeg.06a398bdf6bd9db15f47a27f72fcecea.large
+ *
+ * Whomever architected this needs to be sat in a corner and made
+ * to write "I will not break file naming conventions for dumb arbitrary reasons" a thousand times.
  *
  * @param  {String} URL to a GroupMe image or video
  * @return {String} '<hash>.<extension>'
@@ -86,7 +91,7 @@ function requestMediaItem(mediaUrl) {
  * @param  {Array} User selected group Id
  * @return {Void}
  */
-export function mediaDownloader({ media, groupId }) {
+export function mediaDownloader({ media, id }) {
   const TOTAL_PHOTOS = media.length;
 
   if (!fs.existsSync(MEDIA_DIR)) {
@@ -95,31 +100,24 @@ export function mediaDownloader({ media, groupId }) {
 
   let GROUP_MEDIA_DIR;
 
-  if (!fs.existsSync(`${MEDIA_DIR}/${groupId}`)) {
-    fs.mkdirSync(`${MEDIA_DIR}/${groupId}`, { recursive: true });
-    GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, groupId);
+  if (!fs.existsSync(`${MEDIA_DIR}/${id}`)) {
+    fs.mkdirSync(`${MEDIA_DIR}/${id}`, { recursive: true });
   }
+
+  GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, id);
 
   const downloader = (arr, curr = 1) => {
     if (arr.length) {
-      let { url: URL, user: USER } = arr[0];
+      let { url: URL, user: USER, created: CREATED_AT } = arr[0];
 
       if (!URL || typeof URL !== 'string') {
         curr = curr + 1;
-        db.removeMediaItem(groupId, { url: URL });
+        db.removeMediaItem(id, { url: URL });
         return downloader(db.getMedia(id));
       }
 
       const fileName = renameFile(URL, USER);
-
-      let file;
-
-      try {
-        file = fs.createWriteStream(`${GROUP_MEDIA_DIR}/${fileName}`);
-      } catch (error) {
-        console.log(error);
-      }
-
+      const file = fs.createWriteStream(`${GROUP_MEDIA_DIR}/${fileName}`);
       const request = requestMediaItem(URL);
 
       request.on('response', (response) => {
@@ -137,10 +135,14 @@ export function mediaDownloader({ media, groupId }) {
         });
 
         response.on('end', () => {
-          file.end();
-          curr = curr + 1;
-          db.removeMediaItem(groupId, { url: URL });
-          return downloader(db.getMedia(groupId), curr);
+          file.end(() => {
+            // Change the local file system's timestamp to the original upload date of the file
+            fs.utimesSync(`${GROUP_MEDIA_DIR}/${fileName}`, CREATED_AT, CREATED_AT);
+            curr = curr + 1;
+            db.removeMediaItem(id, { url: URL });
+          });
+
+          return downloader(db.getMedia(id), curr);
         });
       });
 

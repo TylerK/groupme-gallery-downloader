@@ -14,7 +14,7 @@ const createDb = () => {
 
   if (!hasDb) {
     fs.mkdirSync('./data');
-    fs.writeFileSync(DB_FILE, scaffoldData, error => {
+    fs.writeFileSync(DB_FILE, scaffoldData, (error) => {
       if (error) throw error;
       console.log(chalk.green(`Successfuly wrote: ${chalk.white('data/groups.json')}`));
     });
@@ -29,8 +29,7 @@ const createDb = () => {
  * @param {String} token
  */
 const setToken = (token) => {
-  db.set('token', token)
-    .write();
+  db.set('token', token).write();
 };
 
 /**
@@ -50,19 +49,13 @@ const deleteToken = () => {
  * @param {String} id
  */
 const createGroup = (id) => {
-  const groupExists = db
-    .get('groups')
-    .find({ id })
-    .value();
+  const groupExists = db.get('groups').find({ id }).value();
 
   if (!!groupExists) {
     return;
   }
 
-  db
-    .get('groups')
-    .push({ id, media: [] })
-    .write();
+  db.get('groups').push({ id, media: [] }).write();
 };
 
 /**
@@ -70,9 +63,7 @@ const createGroup = (id) => {
  * @param {String} id
  */
 const deleteGroup = (id) => {
-  db.get('groups')
-    .remove({ id })
-    .write();
+  db.get('groups').remove({ id }).write();
 };
 
 /**
@@ -81,22 +72,22 @@ const deleteGroup = (id) => {
  * @param {Object} media
  */
 const addMedia = (id, media) => {
-  db.get('groups')
-    .find({ id })
-    .set('media', media)
-    .write();
+  db.get('groups').find({ id }).set('media', media).write();
 };
+
+/**
+ * Gets the group by id
+ * @param {String} id
+ * @param {Object} group
+ */
+const getGroup = (id) => db.get('groups').find({ id }).value();
 
 /**
  * Grab media to download by group
  * @param {String} id
  * @param {Object} media
  */
-const getMedia = (id) =>
-  db.get('groups')
-    .find({ id })
-    .get('media')
-    .value();
+const getMedia = (id) => db.get('groups').find({ id }).get('media').value();
 
 /**
  * Nuke an image or video to download to a group by url
@@ -104,11 +95,7 @@ const getMedia = (id) =>
  * @param {Object} item
  */
 const removeMediaItem = (id, { url }) => {
-  db.get('groups')
-    .find({ id })
-    .get('media')
-    .remove({ url })
-    .write();
+  db.get('groups').find({ id }).get('media').remove({ url }).write();
 };
 
 export default {
@@ -117,6 +104,7 @@ export default {
   createGroup,
   deleteGroup,
   deleteToken,
+  getGroup,
   getMedia,
   getToken,
   removeMediaItem,
