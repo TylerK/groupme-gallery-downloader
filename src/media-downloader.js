@@ -113,7 +113,7 @@ export function mediaDownloader({ media, id }) {
       if (!URL || typeof URL !== 'string') {
         curr = curr + 1;
         db.removeMediaItem(id, { url: URL });
-        return downloader(db.getMedia(id));
+        return downloader(db.getMedia(id), curr);
       }
 
       const fileName = renameFile(URL, USER);

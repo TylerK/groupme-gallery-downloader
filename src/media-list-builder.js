@@ -3,6 +3,18 @@ import apiRequest, { handleResponse } from './request';
 import db from './db';
 
 /**
+ * Sanatizes a string for writing to disk. Removes illegal characters in Windows, Linux, and OSX.
+ * Useful for file, folder, and user names.
+ * @param {string} string
+ */
+function sanitizeString(string) {
+  return string
+    .trim()
+    .replace(' ', '-')
+    .replace(/([<|>|:|"|\/|\|||\?|\*\]|&])/g, '_');
+}
+
+/**
  * Shrink the data down to only what's necessary: Photo URL's and user names.
  *
  * @param  {Array} media Array of gallery photo objects from the API
@@ -11,7 +23,7 @@ import db from './db';
 function mappedMediaObjects(mediaObjects) {
   return mediaObjects.map((media) => ({
     url: media.attachments[0].url,
-    user: media.name ? media.name : 'UnknownUser',
+    user: media.name ? sanitizeString(media.name) : 'UnknownUser',
     created: media.created_at,
   }));
 }
