@@ -1,13 +1,14 @@
 {
   "name": "groupme",
   "version": "1.1.0",
-  "description": "Pulls down all the photos from any GroupMe group you have access too",
+  "description": "Pulls down all media from any GroupMe group you have access too",
   "author": "Tyler Kelley <tylerckelley@gmail.com> (http://twitter.com/_tkwd)",
   "scripts": {
     "start": "babel-node --inspect ./src/index.js"
   },
   "license": "ISC",
   "dependencies": {
+    "@types/progress": "^2.0.3",
     "babel": "^6.23.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
@@ -15,10 +16,15 @@
     "babel-preset-stage-0": "^6.24.1",
     "chalk": "^1.1.1",
     "inquirer": "^3.3.0",
+    "lowdb": "^1.0.0",
     "node-fetch": "^1.7.3",
     "progress": "^2.0.0"
   },
   "devDependencies": {
+    "@types/chalk": "^2.2.0",
+    "@types/inquirer": "^6.0.3",
+    "@types/lowdb": "^1.0.9",
+    "@types/node-fetch": "^2.3.7",
     "eslint": "^4.19.1"
   }
 }
