@@ -88,7 +88,7 @@ function requestMediaItem(mediaUrl) {
 }
 
 /**
- * @param  {Array} User selected group Id
+ * @param  {Object} User selected group
  * @return {Void}
  */
 export function mediaDownloader({ media, id }) {
@@ -135,6 +135,7 @@ export function mediaDownloader({ media, id }) {
             response.statusMessage
           );
 
+          db.removeMediaItem(id, { url: URL });
           curr = curr + 1;
 
           return downloader(db.getMedia(id), curr);
