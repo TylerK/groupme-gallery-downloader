@@ -110,7 +110,8 @@ export function mediaDownloader({ media, id }) {
     if (arr.length) {
       let { url: URL, user: USER, created: CREATED_AT } = arr[0];
 
-      if (!URL || typeof URL !== 'string') {
+      // Ensure all URL's exist, and are pointing to GroupMe
+      if (!URL || typeof URL !== 'string' || !URL.includes('groupme.com')) {
         curr = curr + 1;
         db.removeMediaItem(id, { url: URL });
         return downloader(db.getMedia(id), curr);
@@ -121,6 +122,24 @@ export function mediaDownloader({ media, id }) {
       const request = requestMediaItem(URL);
 
       request.on('response', (response) => {
+        /**
+         * So apparently GroupMe passes through URL's to certain meme maker sites
+         * and sometimes those sites 301 or throw other shitty errors.
+         */
+        if (response.statusCode !== 200) {
+          console.log(
+            'Ooops, could not fetch:',
+            URL,
+            'Due to:',
+            response.statusCode,
+            response.statusMessage
+          );
+
+          curr = curr + 1;
+
+          return downloader(db.getMedia(id), curr);
+        }
+
         const total = Number(response.headers['content-length']);
         const bar = new ProgressBar(`Downloading [:bar] [${curr} / ${TOTAL_PHOTOS}]`, {
           complete: '=',
