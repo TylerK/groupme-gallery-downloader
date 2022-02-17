@@ -19,9 +19,6 @@ const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
  *   - https://i.groupme.com/999x999.jpeg.06a398bdf6bd9db15f47a27f72fcecea
  *   - https://i.groupme.com/999x999.jpeg.06a398bdf6bd9db15f47a27f72fcecea.large
  *
- * Whomever architected this needs to be sat in a corner and made
- * to write "I will not break file naming conventions for dumb arbitrary reasons" a thousand times.
- *
  * @param  {String} URL to a GroupMe image or video
  * @return {String} '<hash>.<extension>'
  */
@@ -113,7 +110,7 @@ export function mediaDownloader({ media, id }) {
       // Ensure all URL's exist, and are pointing to GroupMe
       if (!URL || typeof URL !== 'string' || !URL.includes('groupme.com')) {
         curr = curr + 1;
-        db.removeMediaItem(id, { url: URL });
+        db.removeMediaItem(id, URL);
         return downloader(db.getMedia(id), curr);
       }
 
@@ -135,7 +132,7 @@ export function mediaDownloader({ media, id }) {
             response.statusMessage
           );
 
-          db.removeMediaItem(id, { url: URL });
+          db.removeMediaItem(id, URL);
           curr = curr + 1;
 
           return downloader(db.getMedia(id), curr);
@@ -161,7 +158,7 @@ export function mediaDownloader({ media, id }) {
           });
 
           curr = curr + 1;
-          db.removeMediaItem(id, { url: URL });
+          db.removeMediaItem(id, URL);
 
           return downloader(db.getMedia(id), curr);
         });

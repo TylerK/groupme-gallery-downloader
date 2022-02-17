@@ -1,112 +1,170 @@
-import fs from 'fs';
-import lowdb from 'lowdb';
-import FileSync from 'lowdb/adapters/FileSync';
+import chalk from 'chalk';
+import { LowSync, JSONFileSync } from 'lowdb';
 
-let adapter, db;
+type Media = {};
 
-/**
- * If a local DB doesn't exist, create it.
- */
-const createDb = () => {
-  const DB_FILE = './data/groups.json';
-  const scaffoldData = '{ "groups": [], "token": "" }';
-  const hasDb = fs.existsSync(DB_FILE);
+type Group = {
+  id: string;
+  media: Media[];
+};
 
-  if (!hasDb) {
-    fs.mkdirSync('./data');
-    fs.writeFileSync(DB_FILE, scaffoldData, (error) => {
-      if (error) throw error;
-      console.log(chalk.green(`Successfuly wrote: ${chalk.white('data/groups.json')}`));
-    });
+type Data = {
+  groups: Group[];
+  token: string;
+};
+
+const adapter = new JSONFileSync<Data>('../db/data.json');
+const db = new LowSync(adapter);
+
+const getGroupById = (id: string): Group | undefined => {
+  if (db.data) {
+    return db.data.groups.find((group) => group.id === id);
   }
-
-  adapter = new FileSync(DB_FILE);
-  db = lowdb(adapter);
 };
 
 /**
  * Cache off the user's developer token
- * @param {String} token
  */
-const setToken = (token) => {
-  db.set('token', token).write();
-};
+export function setToken(token: string): void {
+  try {
+    if (db.data) {
+      db.data.token = token;
+      db.write();
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong writing the token to db/data.json'));
+    throw new Error(error);
+  }
+}
 
 /**
  * Grab the user's developer token
  */
-const getToken = () => db.get('token').value();
+export function getToken(): string | undefined {
+  try {
+    if (db.data) {
+      return db.data.token;
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong getting the token from db/data.json'));
+    throw new Error(error);
+  }
+}
 
 /**
  * Nuke the user's developer token
  */
-const deleteToken = () => {
-  db.unset('token');
-};
+export function deleteToken() {
+  try {
+    if (db.data) {
+      db.data.token = '';
+    }
+    db.write();
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong deleting the token from db/data.json'));
+    throw new Error(error);
+  }
+}
 
 /**
  * Create a new group in the groups array by ID
- * @param {String} id
  */
-const createGroup = (id) => {
-  const groupExists = db.get('groups').find({ id }).value();
+export function createGroup(id: string): void {
+  try {
+    if (db.data) {
+      const groupExists = getGroup(id);
 
-  if (!!groupExists) {
-    return;
+      if (groupExists) {
+        console.log(chalk.green('Group with id already exists:', id));
+        return;
+      }
+
+      db.data.groups.push({ id, media: [] });
+      db.write();
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong creating a group with id:', id));
+    throw new Error(error);
   }
-
-  db.get('groups').push({ id, media: [] }).write();
-};
+}
 
 /**
  * Nuke a group once we're done with it
- * @param {String} id
  */
-const deleteGroup = (id) => {
-  db.get('groups').remove({ id }).write();
-};
+export function deleteGroup(id: string): void {
+  try {
+    if (db.data) {
+      const filteredGroups = db.data.groups.filter((group) => group.id !== id);
+      db.data.groups = filteredGroups;
+      db.write();
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong with deleting group with id:', id));
+    throw new Error(error);
+  }
+}
 
 /**
  * Add media to download to a group by id
- * @param {String} id
- * @param {Object} media
  */
-const addMedia = (id, media) => {
-  db.get('groups').find({ id }).set('media', media).write();
-};
+export function addMedia(id: string, media: any): void {
+  try {
+    if (db.data) {
+      const group = getGroupById(id);
+      if (group) {
+        group.media.push(media);
+      }
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong adding media to group with id:', id));
+    throw new Error(error);
+  }
+}
 
 /**
  * Gets the group by id
- * @param {String} id
- * @param {Object} group
  */
-const getGroup = (id) => db.get('groups').find({ id }).value();
+export function getGroup(id: string): Group | undefined {
+  try {
+    if (db.data) {
+      return getGroupById(id);
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong looking up group with id:', id));
+    throw new Error(error);
+  }
+}
 
 /**
- * Grab media to download by group
- * @param {String} id
- * @param {Object} media
+ * Media to download by group id
  */
-const getMedia = (id) => db.get('groups').find({ id }).get('media').value();
+export function getMedia(id: string): Media | undefined {
+  try {
+    if (db.data) {
+      return getGroupById(id)?.media;
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong looking up group with id:', id));
+    throw new Error(error);
+  }
+}
 
 /**
  * Nuke an image or video to download to a group by url
- * @param {String} id
- * @param {Object} item
  */
-const removeMediaItem = (id, { url }) => {
-  db.get('groups').find({ id }).get('media').remove({ url }).write();
-};
-
-export default {
-  addMedia,
-  createDb,
-  createGroup,
-  deleteGroup,
-  deleteToken,
-  getGroup,
-  getMedia,
-  getToken,
-  removeMediaItem,
-  setToken,
-};
+export function removeMediaItem(id: string, url: string): void {
+  try {
+    if (db.data) {
+      const group = getGroupById(id);
+      if (group) {
+        group.media = group.media.filter((m) => m !== url);
+        db.data.groups = db.data.groups.filter((group) => group.id !== id);
+        db.data.groups.push(group as Group);
+        db.write();
+      }
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong looking up group with id:', id));
+    throw new Error(error);
+  }
+}

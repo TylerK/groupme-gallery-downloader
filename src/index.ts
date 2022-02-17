@@ -12,7 +12,7 @@ import { mediaDownloader } from './media-downloader';
  * @param  {String} authToken
  * @return {Promise}
  */
-async function fetchAvailableGroups(authToken) {
+async function fetchAvailableGroups(authToken: string): Promise<any> {
   return apiRequest(authToken, 'groups')
     .then((response) => {
       if (response.status === 401) {
