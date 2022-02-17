@@ -25,6 +25,20 @@ const getGroupById = (id: string): Group | undefined => {
 };
 
 /**
+ * Grab the user's developer token
+ */
+export function getToken(): string | undefined {
+  try {
+    if (db.data) {
+      return db.data.token;
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong getting the token from db/data.json'));
+    throw new Error(error);
+  }
+}
+
+/**
  * Cache off the user's developer token
  */
 export function setToken(token: string): void {
@@ -35,20 +49,6 @@ export function setToken(token: string): void {
     }
   } catch (error: any) {
     console.log(chalk.red('Something went wrong writing the token to db/data.json'));
-    throw new Error(error);
-  }
-}
-
-/**
- * Grab the user's developer token
- */
-export function getToken(): string | undefined {
-  try {
-    if (db.data) {
-      return db.data.token;
-    }
-  } catch (error: any) {
-    console.log(chalk.red('Something went wrong getting the token from db/data.json'));
     throw new Error(error);
   }
 }
@@ -91,6 +91,34 @@ export function createGroup(id: string): void {
 }
 
 /**
+ * Gets the group by id
+ */
+export function getGroup(id: string): Group | undefined {
+  try {
+    if (db.data) {
+      return getGroupById(id);
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong looking up group with id:', id));
+    throw new Error(error);
+  }
+}
+
+/**
+ * List all groups
+ */
+export function listGroups() {
+  try {
+    if (db.data) {
+      return db.data.groups;
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong listing groups'));
+    throw new Error(error);
+  }
+}
+
+/**
  * Nuke a group once we're done with it
  */
 export function deleteGroup(id: string): void {
@@ -119,20 +147,6 @@ export function addMedia(id: string, media: any): void {
     }
   } catch (error: any) {
     console.log(chalk.red('Something went wrong adding media to group with id:', id));
-    throw new Error(error);
-  }
-}
-
-/**
- * Gets the group by id
- */
-export function getGroup(id: string): Group | undefined {
-  try {
-    if (db.data) {
-      return getGroupById(id);
-    }
-  } catch (error: any) {
-    console.log(chalk.red('Something went wrong looking up group with id:', id));
     throw new Error(error);
   }
 }
