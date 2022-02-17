@@ -1,3 +1,4 @@
+import path from 'node:path';
 import chalk from 'chalk';
 import { LowSync, JSONFileSync } from 'lowdb';
 
@@ -13,8 +14,9 @@ type Data = {
   token: string;
 };
 
-const adapter = new JSONFileSync<Data>('../db/data.json');
+const adapter = new JSONFileSync<Data>('./db/data.json');
 const db = new LowSync(adapter);
+db.read();
 
 const getGroupById = (id: string): Group | undefined => {
   if (db.data) {
