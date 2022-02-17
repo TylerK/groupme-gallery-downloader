@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export const handleResponse = response => {
   if (response.ok) {
     return response.json();

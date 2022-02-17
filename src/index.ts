@@ -1,9 +1,10 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
+
+import db from './db';
 import apiRequest from './request';
 import { mediaListBuilder } from './media-list-builder';
 import { mediaDownloader } from './media-downloader';
-import db from './db';
 
 /**
  * Fetch the groups a user has access to.
