@@ -1,4 +1,4 @@
-import path from 'node:path';
+import fs from 'node:fs';
 import chalk from 'chalk';
 import { LowSync, JSONFileSync } from 'lowdb';
 import { Group, GroupmeData, Media } from './types';
@@ -17,6 +17,14 @@ const getGroupById = (id: string) => {
     throw new Error(error);
   }
 };
+
+export function createDb(name = 'data') {
+  const DB = `./db/${name}.json`;
+  if (fs.existsSync(DB)) {
+    return;
+  }
+  fs.writeFileSync(DB, JSON.stringify({ groups: [], token: '' }));
+}
 
 /**
  * Grab the user's developer token

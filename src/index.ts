@@ -95,6 +95,8 @@ async function processGroupmeData(token: string) {
  * Inquirer and download instantiation
  */
 async function main() {
+  db.createDb();
+
   const existingToken = db.getToken();
   const questionEnterApiToken = [
     {

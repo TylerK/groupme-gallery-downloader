@@ -4,7 +4,7 @@
   "description": "Pulls down all media from any GroupMe group you have access too",
   "author": "Tyler Kelley",
   "scripts": {
-    "start": "node --experimental-fetch --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
+    "start": "node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
     "start:dev": "npm start -- --inspect",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:watch": "npm run test -- --watch"
@@ -29,6 +29,7 @@
     "jest": "^27.5.1",
     "lowdb": "3.0.0",
     "mock-fs": "^5.1.2",
+    "node-fetch": "^3.2.0",
     "progress": "^2.0.0",
     "ts-jest": "^27.1.3",
     "ts-node": "^10.5.0",
