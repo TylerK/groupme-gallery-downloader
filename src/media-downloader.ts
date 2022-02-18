@@ -3,9 +3,10 @@ import https from 'https';
 import url from 'url';
 import path from 'path';
 import fs from 'fs';
-import db from './db';
+import * as db from './db';
+import { httpHeaders } from './request';
 
-const MEDIA_DIR = path.resolve(__dirname, '../', 'media');
+const MEDIA_DIR = path.resolve('../media');
 const IMAGE_FILE_TYPES = /\.(png|jpeg|jpg|gif|bmp|webp)/;
 const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
 
@@ -18,13 +19,10 @@ const VIDEO_FILE_TYPES = /\.(mp4|mov|wmv|mkv|webm)/;
  *   - https://i.groupme.com/06a398bdf6bd9db15f47a27f72fcecea
  *   - https://i.groupme.com/999x999.jpeg.06a398bdf6bd9db15f47a27f72fcecea
  *   - https://i.groupme.com/999x999.jpeg.06a398bdf6bd9db15f47a27f72fcecea.large
- *
- * @param  {String} URL to a GroupMe image or video
- * @return {String} '<hash>.<extension>'
  */
-function renameFile(fileUrl, userName) {
-  const URL = url.parse(fileUrl);
-  const host = URL.hostname;
+function renameFile(fileUrl: string, userName: string) {
+  const url = new URL(fileUrl);
+  const host = url.hostname;
 
   // This is the only reliable way to determine if a download is an image
   // due to groupme sometimes not bothering giving a file an extension.
@@ -33,10 +31,10 @@ function renameFile(fileUrl, userName) {
   const isImage = host === 'i.groupme.com';
 
   // Grab the first 32 chars of each image name
-  const imageHash = /(.{32})\s*$/.exec(fileUrl)[0];
+  const imageHash = /(.{32})\s*$/.exec(fileUrl)?.[0];
 
   // Video URL's
-  const videoHash = /([^/]+$)/.exec(fileUrl)[0].split('.')[0];
+  const videoHash = /([^/]+$)/.exec(fileUrl)?.[0].split('.')[0];
 
   // I think I accounted for all possible filetypes Groupme supports.
   // Knowing them, this will eventually error out somehow.
@@ -72,15 +70,11 @@ function renameFile(fileUrl, userName) {
   return `${user}-${hash}${fileType}`;
 }
 
-function requestMediaItem(mediaUrl) {
+function requestMediaItem(mediaUrl: string) {
   return https.request({
-    host: url.parse(mediaUrl).host,
-    path: url.parse(mediaUrl).pathname,
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-      Referer: 'https://app.groupme.com/chats',
-    },
+    host: new URL(mediaUrl).host,
+    path: new URL(mediaUrl).pathname,
+    headers: httpHeaders,
   });
 }
 
@@ -88,14 +82,14 @@ function requestMediaItem(mediaUrl) {
  * @param  {Object} User selected group
  * @return {Void}
  */
-export function mediaDownloader({ media, id }) {
+export function mediaDownloader({ media, id }: any) {
   const TOTAL_PHOTOS = media.length;
 
   if (!fs.existsSync(MEDIA_DIR)) {
     fs.mkdirSync(MEDIA_DIR);
   }
 
-  let GROUP_MEDIA_DIR;
+  let GROUP_MEDIA_DIR: string;
 
   if (!fs.existsSync(`${MEDIA_DIR}/${id}`)) {
     fs.mkdirSync(`${MEDIA_DIR}/${id}`, { recursive: true });
@@ -103,7 +97,7 @@ export function mediaDownloader({ media, id }) {
 
   GROUP_MEDIA_DIR = path.resolve(MEDIA_DIR, id);
 
-  const downloader = (arr, curr = 1) => {
+  const downloader = (arr: any, curr = 1): any => {
     if (arr.length) {
       let { url: URL, user: USER, created: CREATED_AT } = arr[0];
 
@@ -166,8 +160,8 @@ export function mediaDownloader({ media, id }) {
 
       request.end();
 
-      request.on('error', (error) => {
-        throw new Error(error);
+      request.on('error', (error: Error) => {
+        throw new Error(error.message);
       });
     }
   };

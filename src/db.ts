@@ -1,33 +1,27 @@
 import path from 'node:path';
 import chalk from 'chalk';
 import { LowSync, JSONFileSync } from 'lowdb';
-
-export type Media = {};
-
-export type Group = {
-  id: string;
-  media: Media[];
-};
-
-export type GroupmeData = {
-  groups: Group[];
-  token: string;
-};
+import { Group, GroupmeData, Media } from './types';
 
 const adapter = new JSONFileSync<GroupmeData>('./db/data.json');
 const db = new LowSync(adapter);
 db.read();
 
-const getGroupById = (id: string): Group | undefined => {
-  if (db.data) {
-    return db.data.groups.find((group) => group.id === id);
+const getGroupById = (id: string) => {
+  try {
+    if (db.data) {
+      return db.data.groups.find((group) => group.id === id);
+    }
+  } catch (error: any) {
+    console.log(chalk.red('Something went wrong getting getting the group by id', id));
+    throw new Error(error);
   }
 };
 
 /**
  * Grab the user's developer token
  */
-export function getToken(): string | undefined {
+export function getToken() {
   try {
     if (db.data) {
       return db.data.token;
@@ -41,7 +35,7 @@ export function getToken(): string | undefined {
 /**
  * Cache off the user's developer token
  */
-export function setToken(token: string): void {
+export function setToken(token: string) {
   try {
     if (db.data) {
       db.data.token = token;
@@ -71,7 +65,7 @@ export function deleteToken() {
 /**
  * Create a new group in the groups array by ID
  */
-export function createGroup(id: string): void {
+export function createGroup(id: string) {
   try {
     if (db.data) {
       const groupExists = getGroup(id);
@@ -93,7 +87,7 @@ export function createGroup(id: string): void {
 /**
  * Gets the group by id
  */
-export function getGroup(id: string): Group | undefined {
+export function getGroup(id: string) {
   try {
     if (db.data) {
       return getGroupById(id);
@@ -121,7 +115,7 @@ export function listGroups() {
 /**
  * Nuke a group once we're done with it
  */
-export function deleteGroup(id: string): void {
+export function deleteGroup(id: string) {
   try {
     if (db.data) {
       const filteredGroups = db.data.groups.filter((group) => group.id !== id);
@@ -137,7 +131,7 @@ export function deleteGroup(id: string): void {
 /**
  * Add media to download to a group by id
  */
-export function addMedia(id: string, media: any): void {
+export function addMedia(id: string, media: any) {
   try {
     if (db.data) {
       const group = getGroupById(id);
@@ -154,7 +148,7 @@ export function addMedia(id: string, media: any): void {
 /**
  * Media to download by group id
  */
-export function getMedia(id: string): Media | undefined {
+export function getMedia(id: string) {
   try {
     if (db.data) {
       return getGroupById(id)?.media;
@@ -168,14 +162,13 @@ export function getMedia(id: string): Media | undefined {
 /**
  * Nuke an image or video to download to a group by url
  */
-export function removeMediaItem(id: string, url: string): void {
+export function removeMediaItem(id: string, url: string) {
   try {
     if (db.data) {
       const group = getGroupById(id);
       if (group) {
-        group.media = group.media.filter((m) => m !== url);
-        db.data.groups = db.data.groups.filter((group) => group.id !== id);
-        db.data.groups.push(group as Group);
+        const media = group.media.filter((m) => m !== url);
+        group.media = media;
         db.write();
       }
     }

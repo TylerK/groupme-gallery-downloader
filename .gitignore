@@ -1,7 +1,7 @@
 node_modules/
 media/
 dist/
-data/
 *.DS_Store
 *.log
 coverage/
+db/

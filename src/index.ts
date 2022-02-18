@@ -2,9 +2,10 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 
 import * as db from './db';
-import apiRequest from './request';
+import { request } from './request';
 import { mediaListBuilder } from './media-list-builder';
 import { mediaDownloader } from './media-downloader';
+import { Group } from './types';
 
 /**
  * Fetch the groups a user has access to.
@@ -13,14 +14,16 @@ import { mediaDownloader } from './media-downloader';
  * @return {Promise}
  */
 async function fetchAvailableGroups(authToken: string): Promise<any> {
-  return apiRequest(authToken, 'groups')
+  return request(authToken, 'groups')
     .then((response) => {
       if (response.status === 401) {
         throw new Error(chalk.red('Unauthorized, likely an invalid token'));
       }
       return response.json();
     })
-    .then(({ response }) => response.map(({ name, id }) => ({ name, value: id })))
+    .then(({ response }) =>
+      response.map(({ name, id }: { name: string; id: string }) => ({ name, value: id }))
+    )
     .catch((error) => {
       throw new Error(error);
     });
@@ -28,10 +31,8 @@ async function fetchAvailableGroups(authToken: string): Promise<any> {
 
 /**
  * Prompt the user to to select from a list of groups.
- *
- * @param {Array} availableGroups Array of groups the user has access too, returned from the API
  */
-function selectGroup(availableGroups) {
+function selectGroup(availableGroups: string[]) {
   const question = {
     type: 'list',
     name: 'id',
@@ -39,7 +40,7 @@ function selectGroup(availableGroups) {
     choices: availableGroups,
   };
 
-  return inquirer.prompt(question).then(({ id }) => id);
+  return inquirer.prompt(question as any).then(({ id }) => id);
 }
 
 /**
@@ -48,7 +49,7 @@ function selectGroup(availableGroups) {
  * @param  {String} User supplied auth token
  * @return {Promise} Pass back the mediaListBuilder promise
  */
-async function selectFromAvailableGroups(authToken) {
+async function selectFromAvailableGroups(authToken: string) {
   const availableGroups = await fetchAvailableGroups(authToken);
 
   if (availableGroups.length === 0) {
@@ -73,15 +74,13 @@ async function selectFromAvailableGroups(authToken) {
  *       check remote to see if anything new has been uploaded and append those items
  *       local cache of undownloaded media.
  *
- * @param {string} token Supplied developer token
- * @returns void
  */
-async function processGroupmeData(token) {
+async function processGroupmeData(token: string) {
   const { authToken, id } = await selectFromAvailableGroups(token);
 
   const localGroupData = db.getGroup(id);
 
-  if (localGroupData.media && !!localGroupData.media.length) {
+  if (localGroupData?.media && !!localGroupData.media.length) {
     console.log(
       `Restarting where you left off. ${chalk.green(localGroupData.media.length)} downloads to go!`
     );
@@ -96,8 +95,6 @@ async function processGroupmeData(token) {
  * Inquirer and download instantiation
  */
 async function main() {
-  db.createDb();
-
   const existingToken = db.getToken();
   const questionEnterApiToken = [
     {

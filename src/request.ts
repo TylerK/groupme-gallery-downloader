@@ -1,19 +1,24 @@
-export const handleResponse = response => {
+export const httpHeaders = {
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
+  Referer: 'https://app.groupme.com/chats',
+};
+
+export function handleResponse(response: Response): Promise<any> {
   if (response.ok) {
     return response.json();
   }
-  throw new Error(response.status);
-};
+  throw new Error(response.statusText);
+}
 
-export default (token, path = '') => {
+export function request(token: string, path = ''): Promise<Response> {
   const url = `https://api.groupme.com/v3/${path}`;
   const options = {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-      'Referer': 'https://app.groupme.com/chats',
-      'X-Access-Token': token
-    }
+      ...httpHeaders,
+      'X-Access-Token': token,
+    },
   };
 
   return fetch(url, options);
-};
+}

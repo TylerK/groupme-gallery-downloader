@@ -4,7 +4,8 @@
   "description": "Pulls down all media from any GroupMe group you have access too",
   "author": "Tyler Kelley",
   "scripts": {
-    "start": "node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
+    "start": "node --experimental-fetch --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
+    "start:dev": "npm start -- --inspect",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
     "test:watch": "npm run test -- --watch"
   },
