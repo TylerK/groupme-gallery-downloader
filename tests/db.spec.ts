@@ -1,6 +1,6 @@
 import mock from 'mock-fs';
 import { describe, it } from '@jest/globals';
-import * as db from '../db';
+import * as db from '../src/db';
 
 describe('DB', () => {
   beforeAll(() => {

@@ -4,8 +4,9 @@
   "description": "Pulls down all media from any GroupMe group you have access too",
   "author": "Tyler Kelley",
   "scripts": {
-    "start": "ts-node src/index.ts",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+    "start": "node --experimental-specifier-resolution=node --loader ts-node/esm src/index.ts",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:watch": "npm run test -- --watch"
   },
   "engines": {
     "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
@@ -17,6 +18,7 @@
     "@babel/preset-env": "^7.16.11",
     "@babel/preset-typescript": "^7.16.7",
     "@jest/globals": "^27.5.1",
+    "@types/inquirer": "^8.2.0",
     "@types/jest": "^27.4.0",
     "@types/mock-fs": "^4.13.1",
     "@types/progress": "^2.0.3",

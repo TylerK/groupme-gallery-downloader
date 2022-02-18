@@ -2,19 +2,19 @@ import path from 'node:path';
 import chalk from 'chalk';
 import { LowSync, JSONFileSync } from 'lowdb';
 
-type Media = {};
+export type Media = {};
 
-type Group = {
+export type Group = {
   id: string;
   media: Media[];
 };
 
-type Data = {
+export type GroupmeData = {
   groups: Group[];
   token: string;
 };
 
-const adapter = new JSONFileSync<Data>('./db/data.json');
+const adapter = new JSONFileSync<GroupmeData>('./db/data.json');
 const db = new LowSync(adapter);
 db.read();
 
@@ -77,7 +77,7 @@ export function createGroup(id: string): void {
       const groupExists = getGroup(id);
 
       if (groupExists) {
-        console.log(chalk.green('Group with id already exists:', id));
+        console.log(chalk.green('Skipping group creation. Group with id already exists:', id));
         return;
       }
 
