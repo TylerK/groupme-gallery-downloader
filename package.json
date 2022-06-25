@@ -17,7 +17,7 @@
     "chalk": "^4.1.0",
     "inquirer": "^7.3.3",
     "lowdb": "^1.0.0",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.6.7",
     "progress": "^2.0.0"
   },
   "devDependencies": {
